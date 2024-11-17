@@ -21,6 +21,8 @@ n = symbols('n')
 
 class CobViaLim():
     """
+    Coboundary via limits class.
+    Solves the coboundary condition for a given pair of matrices.
     Uses sympy symbol `n`
     """
     def __init__(self, recursion_matrix1, recursion_matrix2, limit1, limit2,
@@ -79,21 +81,6 @@ class CobViaLim():
             display(sol)
             display(U)
         return U
-
-    def solve_U_inefficient(self, max_i, verbose=False):
-        U_denominator_lcms = []
-        U_numerator_gcds = []
-        self.max_i = max_i
-        empirical_coboundaries = np.empty((4, max_i), dtype=np.longdouble) #, dtype=object) - keeps sympy Integers
-        for i in range(max_i):
-            if verbose:
-                print(i + 1)
-            empirical_coboundaries[:, i] = np.array(self.solve_U_i(i + 1, verbose=verbose), dtype=np.longdouble).reshape(-1)
-            U_denominator_lcms.append(self.last_U_denominator_lcm)
-            U_numerator_gcds.append(self.last_U_numerator_gcd)
-        self.U_denominator_lcms = U_denominator_lcms
-        self.U_numerator_gcds = U_numerator_gcds
-        self.empirical_coboundaries = empirical_coboundaries
 
     def solve_empirical_U(self, max_i, verbose=False, reduce=True):
         U_denominator_lcms = []
@@ -247,6 +234,15 @@ class CobViaLim():
                              'Method cannot be applied.')
 
         return divide_by_ij, fit_from
+    
+    def check_coboundary(self, U = None, verbose=False, return_prod=False, exact=False, return_scale=False):
+        if U is None:
+            if not hasattr(self, 'U'):
+                raise ValueError('You need to run `extract_U` first or supply `U` as an argument.')
+            else:
+                U = self.U
+        return check_coboundary(self.recursion_matrix1, self.recursion_matrix2, U, symbol=n,
+                                verbose=verbose, return_prod=return_prod, exact=exact, return_scale=return_scale)
 
     def extract_U(self, fit_up_to=None, fit_from=0, divide_by_ij=(0,0),
                 all_solutions=False, verbose=False, auto_resolve_denominator=True):
@@ -314,20 +310,12 @@ class CobViaLim():
             self.U = solutions[-1]
         return solutions
 
-    def check_coboundary(self, U = None, verbose=False, return_prod=False, exact=False, return_scale=False):
-        if U is None:
-            if not hasattr(self, 'U'):
-                raise ValueError('You need to run `extract_U` first or supply `U` as an argument.')
-            else:
-                U = self.U
-        return check_coboundary(self.recursion_matrix1, self.recursion_matrix2, U, symbol=n,
-                                verbose=verbose, return_prod=return_prod, exact=exact, return_scale=return_scale)
-
     def extract_g(self):
         if not hasattr(self, 'U'):
             raise ValueError('You need to run `extract_U` first')
         if self.check_coboundary():
-            prod1, prod2 = check_coboundary(self.recursion_matrix1, self.recursion_matrix2, self.U, symbol=n, verbose=False, return_prod=True)
+            prod1, prod2 = check_coboundary(self.recursion_matrix1, self.recursion_matrix2, self.U,
+                                            symbol=n, verbose=False, return_prod=True)
             exist_nonzero = False
             for (i, j) in product(range(2), repeat=2):
                 num_ij = prod2[i, j]; den_ij = prod1[i, j]
@@ -354,6 +342,25 @@ class CobViaLim():
 
     # Legacy methods
 
+
+    def solve_empirical_U_inefficient(self, max_i, verbose=False):
+        """
+        Computes the limit at different starting indices by peeling the initial layers of the recursion matrix.
+        Then computes the empirical coboundary matrices by solving linear equations relating these limits.
+        """
+        U_denominator_lcms = []
+        U_numerator_gcds = []
+        self.max_i = max_i
+        empirical_coboundaries = np.empty((4, max_i), dtype=np.longdouble) #, dtype=object) - keeps sympy Integers
+        for i in range(max_i):
+            if verbose:
+                print(i + 1)
+            empirical_coboundaries[:, i] = np.array(self.solve_U_i(i + 1, verbose=verbose), dtype=np.longdouble).reshape(-1)
+            U_denominator_lcms.append(self.last_U_denominator_lcm)
+            U_numerator_gcds.append(self.last_U_numerator_gcd)
+        self.U_denominator_lcms = U_denominator_lcms
+        self.U_numerator_gcds = U_numerator_gcds
+        self.empirical_coboundaries = empirical_coboundaries
 
     # originally used numpy arrays
     def solve_empirical_U_numpy_array(self, max_i, verbose=False, reduce=True): # 
