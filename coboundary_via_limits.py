@@ -1,4 +1,4 @@
-from utils import *
+from computational_utils import *
 from coboundary_via_limits_utils import *
 from ramanujantools import Matrix
 from ramanujantools.pcf import PCF
@@ -328,13 +328,15 @@ class CobViaLim():
             self.g1 = g1; self.g2 = g2
             return g1, g2
         else:
-            raise ValueError('Coboundary condition failed.')
+            raise CoboundaryError('Coboundary condition failed.')
 
-    def extract_coboundary_triple(self, num_deg_den_deg: Tuple[int, int], fit_up_to=None, divide_by_ij=(0,0), reduce=True, mode='sympy'):
+    def extract_coboundary_triple(self, fit_up_to=None, fit_from=0, divide_by_ij=(0,0),
+                                  verbose=False, auto_resolve_denominator=True):
         if not hasattr(self, 'empirical_coboundaries'):
             raise ValueError('You need to run `solve_U` first')
 
-        self.extract_U(num_deg_den_deg, fit_up_to=fit_up_to, divide_by_ij=divide_by_ij, reduce=reduce, mode=mode)
+        self.extract_U(self, fit_up_to=fit_up_to, fit_from=fit_from, divide_by_ij=divide_by_ij,
+                all_solutions=False, verbose=verbose, auto_resolve_denominator=auto_resolve_denominator)
         self.extract_g()
 
         return self.U, self.g1, self.g2
@@ -441,7 +443,6 @@ class CobViaLim():
             U[i, j] = sp.Poly(coeffs, n).expr # migrate to np.polynomial.Polynomial.fit()?
 
         return U
-    
 
     def solver_extract_U(self, num_deg_den_deg: Tuple[int, int], fit_up_to=None, divide_by_ij=(0,0), reduce=True, solver='sympy'):
         """

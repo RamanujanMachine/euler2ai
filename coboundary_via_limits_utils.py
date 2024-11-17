@@ -1,4 +1,4 @@
-from utils import *
+from computational_utils import *
 from ramanujantools import Matrix
 import sympy as sp
 import numpy as np
@@ -83,6 +83,7 @@ def get_rational_hypotheses(empirical_numerators, empirical_denominators, verbos
                             max_deg=None, num_deg_den_deg: Union[Tuple[int, int], str] = 'half',
                             initial_index=1):
     """
+    Fits rational functions to the given empirical numerators and denominators.
     Args:
         empirical_numerators: list of numerators of the rational function
         empirical_denominators: list of denominators of the rational function
