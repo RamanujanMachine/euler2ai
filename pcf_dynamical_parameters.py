@@ -18,9 +18,12 @@ class PCFDynamicalParameters():
     """
     This class is used to calculate the delta, convergence rate and gcd growth rate parameters of a PCF.
     The depth is counted from 0, corresponding to the A matrix. So the ith convergent is at index i.
+    In all methods requiring limit evaluation, if a limit is not given and the PCF object does has a limit attribute,
+    the limit attribute is used. Otherwise, the empirical limit is calculated (to depth * 2 as in Blind Delta).
     """
-    def __init__(self, pcf: PCF):
+    def __init__(self, pcf: PCF, limit=None):
         self.pcf = pcf
+        self.limit = limit
         self.depth = 0
         self.convergents = [self.pcf.A()]
 
@@ -47,8 +50,11 @@ class PCFDynamicalParameters():
         if depths[0] < 1:
             raise ValueError('`depths` must contain only positive integers.')
         if limit is None:
-            self.bridge_convergents(2 * depths[-1])
-            limit = Limit(self.convergents[2 * depths[-1]], self.convergents[2 * depths[-1] - 1]).as_float()
+            if self.limit is None:
+                self.bridge_convergents(2 * depths[-1])
+                limit = Limit(self.convergents[2 * depths[-1]], self.convergents[2 * depths[-1] - 1]).as_float()
+            else:
+                limit = self.limit
         self.bridge_convergents(depths[-1])
         return [Limit(self.convergents[depth], self.convergents[depth - 1]).delta(limit) for depth in depths]
     
@@ -72,8 +78,11 @@ class PCFDynamicalParameters():
         """
         depths = sorted(list(set(depths)))
         if limit is None:
-            self.bridge_convergents(2 * depths[-1]) # [blind_limit], calculate this efficiently using last existing convergent
-            limit = Limit(self.convergents[2 * depths[-1]], self.convergents[2 * depths[-1] - 1]).as_float()
+            if self.limit is None:
+                self.bridge_convergents(2 * depths[-1]) # [blind_limit], calculate this efficiently using last existing convergent
+                limit = Limit(self.convergents[2 * depths[-1]], self.convergents[2 * depths[-1] - 1]).as_float()
+            else:
+                limit = self.limit
         else:
             self.bridge_convergents(depths[-1])
         return [mm.log(abs(mm.mp.mpf(limit - self.convergents[depth]))) for depth in depths]
