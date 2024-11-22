@@ -1,29 +1,32 @@
 from computational_utils import *
 from coboundary_via_limits_utils import *
 from ramanujantools import Matrix
-from ramanujantools.pcf import PCF
 import sympy as sp
 import numpy as np
 
 import matplotlib.pyplot as plt
 
 from itertools import product
-from typing import Tuple, Dict, List, Union, Optional
+from typing import Tuple, Optional
 from IPython.display import display
 
 from sympy import symbols
 n = symbols('n')
 
 
-# Coboundary via limits class:
+# Coboundary via limits:
 # CobViaLim class and (child) PCFCobViaLim class
 
 
 class CobViaLim():
     """
     Coboundary via limits class.
-    Solves the coboundary condition for a given pair of matrices.
-    Uses sympy symbol `n`
+    To solve for the coboundary matrix of two given matrices with known recursion
+    limits, first run the `solve_empirical_U` method, then run the `extract_U` method.
+    If the `extract_U` method fails for increasing numbers of empirical coboundary matrices,
+    the matrices may not be coboundary.
+    Uses sympy symbol `n` for calculations so make sure the matrices are given in terms
+    of n.
     """
     def __init__(self, recursion_matrix1, recursion_matrix2, limit1, limit2,
                  base_constant=sp.pi, A_matrix1=Matrix.eye(2), A_matrix2=Matrix.eye(2)):
@@ -42,7 +45,7 @@ class CobViaLim():
         return get_limit_from_i(self.recursion_matrix1, self.limit1, i, A_matrix=self.A_matrix1), \
                get_limit_from_i(self.recursion_matrix2, self.limit2, i, A_matrix=self.A_matrix2)
 
-    def solve_U_i(self, i, verbose=True, reduce=True, return_equations=False):
+    def solve_empirical_U_i(self, i, verbose=True, reduce=True, return_equations=False):
         recursion1_i_limit, recursion2_i_limit = self.get_limits_from_i(i)
         num1, den1 = recursion1_i_limit.as_numer_denom()
         num2, den2 = recursion2_i_limit.as_numer_denom()
@@ -91,7 +94,7 @@ class CobViaLim():
 
         if verbose:
             print(1)
-        last_U_i = self.solve_U_i(1, verbose=verbose, reduce=reduce)
+        last_U_i = self.solve_empirical_U_i(1, verbose=verbose, reduce=reduce)
         empirical_coboundaries[:, 0] = last_U_i.reshape(4, 1)
         U_denominator_lcms.append(self.last_U_denominator_lcm)
         U_numerator_gcds.append(self.last_U_numerator_gcd)
@@ -300,9 +303,9 @@ class CobViaLim():
                 print(f'Coboundary matrix hypothesis {ind + 1}:')
                 display(U_hypothesis)
             if self.check_coboundary(U = U_hypothesis):
+                self.U = U_hypothesis
                 if not all_solutions:
-                    self.U = U_hypothesis
-                    return U_hypothesis
+                    return self.U
                 else:
                     solutions.append(U_hypothesis)
 
@@ -335,7 +338,7 @@ class CobViaLim():
         if not hasattr(self, 'empirical_coboundaries'):
             raise ValueError('You need to run `solve_U` first')
 
-        self.extract_U(self, fit_up_to=fit_up_to, fit_from=fit_from, divide_by_ij=divide_by_ij,
+        self.extract_U(fit_up_to=fit_up_to, fit_from=fit_from, divide_by_ij=divide_by_ij,
                 all_solutions=False, verbose=verbose, auto_resolve_denominator=auto_resolve_denominator)
         self.extract_g()
 
