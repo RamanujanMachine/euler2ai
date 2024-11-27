@@ -14,6 +14,25 @@ from multimethod import multimethod
 import matplotlib.pyplot as plt
 
 
+def logerrors(pcf: PCF, depth: int, limit=None) -> Collection[float]:
+    """
+    Calculates the log-errors of the pcf at the given depths.
+    """
+    if limit is None:
+        limit = pcf.limit(list(range(1, depth + 1)), start=1)
+    return [mm.log(abs(mm.mp.mpf(limit - pcf.limit(depth).as_float())), 10) for i in range(1, depth + 1)]
+
+
+def convergence_rate(pcf: PCF, depth: int, limit=None) -> Tuple[float, float, float]:
+    r"""
+    Calculates the parameters of the convergence rate of the pcf by fitting up to depth:
+    $log(error(n)) = A \cdot nlog(n) + B \cdot n + C \cdot log(n)$
+    Returns:
+        A, B, C
+    """
+    return sc.optimize.curve_fit(PCFDynamicalParameters.paramfit, np.arange(1, depth + 1), logerrors(pcf, depth, limit=limit), maxfev=10000)[0]
+
+
 class PCFDynamicalParameters():
     """
     This class is used to calculate the delta, convergence rate and gcd growth rate parameters of a PCF.
