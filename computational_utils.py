@@ -44,38 +44,44 @@ def as_pcf(matrix, deflate_all=True):
     return pcf
 
 
-def as_pcf_cob(matrix):
+def as_pcf_cob(matrix, deflate_all=True):
     r"""
     matrix * coboundary $\propto$ coboundary * pcf
     """
     a, b, c, d = [cell for cell in matrix]
-    eta = sp.sympify(as_pcf_eta(matrix))
+    if deflate_all:
+        eta = sp.sympify(as_pcf_eta(matrix))
+    else:
+        eta = sp.Expr(1)
     return Matrix([[1, a], [0, c]]) * Matrix([[eta.subs({n: n - 1}), 0], [0, 1]]) * Matrix([[1, 0], [0, c.subs({n: n - 1})]])
 
 
-def as_pcf_eta(matrix):
+def as_pcf_eta(matrix, deflate_all=True):
     """
     Constant for full deflation of the initial PCF reached.
     """
-    pcf = as_pcf(matrix, deflate_all=False)
-    return content(pcf.a_n, pcf.b_n, [n])
+    if deflate_all:
+        pcf = as_pcf(matrix, deflate_all=False)
+        return content(pcf.a_n, pcf.b_n, [n])
+    else:
+        return sp.sympify(1)
 
 
-def as_pcf_polys(matrix):
+def as_pcf_polys(matrix, deflate_all=True):
     r"""
     The external polynomials $g_1, g_2$ to complete the coboundary relation:
     $g_1(n) \cdot M(n) U(n+1) = g_2(n) \cdot U(n) PCF.M(n)$
     """
-    return matrix[1, 0].subs({n: n - 1}), as_pcf_eta(matrix)
+    return matrix[1, 0].subs({n: n - 1}), as_pcf_eta(matrix, deflate_all=deflate_all)
 
 
-def get_folded_pcf_limit(pcf, symbol, factor, limit):
+def get_folded_pcf_limit(pcf, symbol, factor, limit, deflate_all=True):
   """
     folded * U(n+1) = U(n) * foldedpcf
   """
   foldedmat = fold_matrix(pcf.M(), symbol, factor)
-  foldedpcf = as_pcf(foldedmat)
-  U = as_pcf_cob(foldedmat)
+  foldedpcf = as_pcf(foldedmat, deflate_all=deflate_all)
+  U = as_pcf_cob(foldedmat, deflate_all=deflate_all)
   return mobius(foldedpcf.A() * U.subs({n: 1}).inv() * pcf.A().inv(), limit)
 
 
