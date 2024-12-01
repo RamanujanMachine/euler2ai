@@ -12,7 +12,70 @@ from IPython.core.display import HTML
 from copy import deepcopy
 
 
+# Gathering LaTeX content from arXiv - main function
+
+
+def gather_latex(arxiv_ids, queries=[], all_latex=False, remove_version=False,
+                 clean_equations=True, search_comments=True,
+                 sleep=1, sleep_burst=10, verbose=False):
+    """
+    Args:
+        arxiv_ids: list of arXiv IDs
+        queries: regular expression to search for in each latex file
+        all_latex: if True, returns all the latex content of the .gz / tar.gz files
+        remove_version: if True, remove the version number from the arXiv ID
+        clean_equations: if True, clean each equation using the clean_equation function
+        search_comments: if True, search for the queries in latex comments as well
+        (these may not compile so results may be less reliable for equation gathering)
+        sleep: time to wait between API requests
+        sleep_burst: number of requests to make before waiting
+    Returns:
+        A tuple containing
+        1. LaTeX content of the arXiv papers in the following format:
+            * if all_latex=True, returns a dictionary of dictionaries:
+                { id: { file_name: content } }
+            * if all_latex=False, returns a dictionary of dictionaries of lists of dictionaries:
+                { id: { file_name: [{'e': str, 'l': int, 't': str}] } }
+                containing the regular expression matches in the latex content,
+                the corresponding line numbers, and the type of the part of content
+                ('b' - latex body or 'c' - latex comment) in which the equation was found
+        2. number of failed accesses to papers.
+    """
+
+    if not queries and not all_latex:
+        queries = [equation_patterns()]
+
+    contents = {}
+    fails = 0
+
+    for i, paper_id in enumerate(arxiv_ids):
+        if i % sleep_burst == 0 and i != 0:
+            time.sleep(sleep)
+        try:
+            if 'v' in paper_id[-4:] and remove_version:
+                paper_id = paper_id[:-2]
+                if verbose:
+                    print(f'{i + 1} Removed version to get {paper_id}')
+            if all_latex:
+                contents[paper_id] = fetch_arxiv_latex(paper_id, verbose=verbose)
+            else:
+                latex_dict = fetch_arxiv_latex(paper_id, verbose=verbose)
+                contents[paper_id] = gather_from_latex(latex_dict, queries, clean_equations=clean_equations, search_comments=search_comments)
+        except Exception as x:
+            if verbose:
+                print(i + 1, ':', paper_id, ':', x)
+            fails += 1
+
+    return contents, fails
+
+
+# Fetching LaTeX content from arXiv
+
+
 def get_gzip_name(data):
+    r"""
+    Gets the name of a gzip from its bytes.
+    """
     with io.BytesIO(data) as file:
         # Read GZIP header
         header = file.read(10)
@@ -33,6 +96,9 @@ def get_gzip_name(data):
 
 def decode_gz(data, verbose=False):
     """
+    Decodes a .gz or .tar.gz file and returns a dictionary of
+    { tex_file_name (string) : content (string) }.
+    Tries decoding with utf-8 and latin-1.
     Args:
         data: bytes
     """
@@ -82,7 +148,7 @@ def decode_gz(data, verbose=False):
 def fetch_arxiv_latex(arxiv_id, verbose=False):
     """
     Returns a dictionary tex_file_name (string) : content (string)
-    for the given arxiv ID.
+    for the given arXiv ID.
     """
     # Construct the LaTeX source URL
     latex_url = f"https://arxiv.org/e-print/{arxiv_id}"
@@ -117,6 +183,9 @@ def fetch_arxiv_latex(arxiv_id, verbose=False):
                     print(f"Error extracting tar.gz / gz: {e}")
 
     return latex_files_content
+
+
+# Regular expressions
 
 
 def equation_patterns(inner_string=''):
@@ -168,6 +237,9 @@ def commented_block_patterns():
     return r'(?m)^(?:[ \t]*%.*\n)+'
 
 
+# Processing LaTeX string
+
+
 def split_latex(txt: str):
     r"""
     Splits latex text into actual latex code and comments.
@@ -177,10 +249,6 @@ def split_latex(txt: str):
     onlytxt = re.sub(pattern, lambda m: m.group(3) if m.group(2) and not m.group(1) else m.group(1) + m.group(3), txt)
     onlycomments = re.sub(pattern, lambda m: m.group(3) if not m.group(2) else m.group(2) + m.group(3), txt)
     return onlytxt, onlycomments
-
-
-def count_unescaped_dollar_signs(txt: str):
-    return len(re.findall(r'(?<!\\)\$', txt))
 
 
 def char_index_to_line_mapping(text: str):
@@ -194,10 +262,41 @@ def char_index_to_line_mapping(text: str):
     return mapping
 
 
+def count_unescaped_dollar_signs(txt: str):
+    return len(re.findall(r'(?<!\\)\$', txt))
+
+
+def clean_equation(equation: str):
+    equation = re.sub(r'\\left(?!\w)|\\right(?!\w)', r' ', equation)
+    equation = re.sub(r'\\lparen|\\lbrack', '(', equation)
+    equation = re.sub(r'\\rparen|\\rbrack', ')', equation)
+
+    equation = re.sub(r'=', r' = ', equation)
+    equation = re.sub(r'&', r' & ', equation)
+    equation = re.sub(r', \\quad|, \\qquad', r' & ', equation)
+
+    equation = re.sub(r'(\\n\b|\\r\b|\\t\b|\\quad|\\qquad|%)+', r' ', equation)
+    equation = re.sub(r'\\label\{(?s:.)*?\}', r' ', equation)
+    equation = re.sub(r'\s+', r' ', equation)
+    return equation.strip()
+
+
+def compare_equation_cleaning(arxiv_id, queries=[], verbose=False):
+    cleandic = gather_latex([arxiv_id], queries=queries, clean_equations=True, search_comments=True, verbose=verbose)[0]
+    cleandf = gather_to_df(cleandic)
+    dirtydic = gather_latex([arxiv_id], queries=queries, clean_equations=False, search_comments=True, verbose=verbose)[0]
+    dirtydf = gather_to_df(dirtydic)
+    return pd.concat([dirtydf.rename(columns={'equation': 'original_equation'}), cleandf['equation'].rename("cleaned_equation")], axis=1)
+
+
 def gather_from_latex(latex_files_dict, queries, clean_equations=True, search_comments=True, verbose=False):
     r"""
-    Returns a dictionary of lists of dictionaries:
-    Containing the regular expression matches of each of the files.
+    Returns a dictionary of lists of dictionaries
+    containing the regular expression matches of each of the files.
+    Format: { file_name: [{'e': str, 'l': int, 't': str}] }
+    where 'e' contains a match, 'l' is the line number of the match,
+    and 't' is the type of the part of content ('b' - latex body or 'c' - latex comment)
+    in which the equation was found.
     """
     temp_dict = {file_name: [] for file_name in latex_files_dict}
     for file_name, content in latex_files_dict.items():
@@ -217,7 +316,7 @@ def gather_from_latex(latex_files_dict, queries, clean_equations=True, search_co
                 temp_dict[file_name].append({
                     'e': equation,
                     'l': line_number,
-                    't': 'l'
+                    't': 'b'
                 })
             
             # matches in comments
@@ -233,7 +332,7 @@ def gather_from_latex(latex_files_dict, queries, clean_equations=True, search_co
                         print(f'Comment block {i}: start index: {comment_block_start_index}, line number: {comment_block_line_number}')
                     if count_unescaped_dollar_signs(comment_block.group()) % 2 != 0:
                         if verbose:
-                            print(f'Uneven number of unescaped dollar signs ($) in comment block {i}: {comment_block.group()}. Skipping this comment block.')
+                            print(f'Skipping this comment block: Uneven number of unescaped dollar signs ($) in comment block {i}: {comment_block.group()}')
                         continue
 
                     comment_block_line_mapping = char_index_to_line_mapping(comment_block.group())
@@ -253,95 +352,7 @@ def gather_from_latex(latex_files_dict, queries, clean_equations=True, search_co
     return temp_dict
 
 
-def gather_latex(arxiv_ids, queries=[], all_latex=False, remove_version=False,
-                 clean_equations=True, search_comments=True,
-                 sleep=1, sleep_burst=10, verbose=False):
-    """
-    Args:
-        arxiv_ids: list of arXiv IDs
-        queries: regular expression to search for in each latex file
-        all_latex: if True, returns all the latex content of the .gz / tar.gz files
-        remove_version: if True, remove the version number from the arXiv ID
-        clean_equations: if True, clean each equation using the clean_equation function
-        search_comments: if True, search for the queries in latex comments as well
-        (these may not compile so results may be less reliable for equation gathering)
-        sleep: time to wait between API requests
-        sleep_burst: number of requests to make before waiting
-    Returns: 
-        if all_latex=True, returns a dictionary of dictionaries:
-        { id: { file_name: content } }
-        if all_latex=False, returns a dictionary of dictionaries of lists of dictionaries:
-        { id: { file_name: [{'e': str, 'l': int, 't': str}] } }
-        containing the regular expression matches in the latex content, the corresponding line numbers,
-        and the type of content ('l' - latex or 'c' - comment) in which the equation was found
-    """
-
-    if not queries and not all_latex:
-        queries = [equation_patterns()]
-
-    contents = {}
-    fails = 0
-
-    for i, paper_id in enumerate(arxiv_ids):
-        if i % sleep_burst == 0 and i != 0:
-            time.sleep(sleep)
-        try:
-            if 'v' in paper_id[-4:] and remove_version:
-                paper_id = paper_id[:-2]
-                if verbose:
-                    print(f'{i + 1} Removed version to get {paper_id}')
-            if all_latex:
-                contents[paper_id] = fetch_arxiv_latex(paper_id, verbose=verbose)
-            else:
-                latex_dict = fetch_arxiv_latex(paper_id, verbose=verbose)
-
-
-                # temp_dict = {file_name: [] for file_name in latex_dict}
-
-                # for file_name, content in latex_dict.items():
-                #     text, comments = split_latex(content)
-                #     text_line_mapping = char_index_line_mapping(text)
-                #     comment_line_mapping = char_index_line_mapping(comments)
-
-                #     for query in queries:
-                #         for match in re.finditer(query, text):
-                #             equation = match.group()  # Extract the full equation
-                #             start_index = match.start()  # Start position of the match
-                #             # Find the line number corresponding to the start index
-                #             line_number = next(line_no for cum_len, line_no in text_line_mapping if start_index < cum_len)
-
-                #             if clean_equations:
-                #                 equation = clean_equation(equation)
-                #             temp_dict[file_name].append({
-                #                 'e': equation,
-                #                 'l': line_number,
-                #                 't': 'l'
-                #             })
-                        
-                #         if search_comments:
-                #             for comment_block in re.finditer(commented_block_patterns(), comments):
-                #                 if count_unescaped_dollar_signs(comment_block.group()) % 2 != 0:
-                #                     continue
-                #                 for match in re.finditer(query, comment_block.group()):
-                #                     equation = match.group()
-                #                     start_index = match.start()
-                #                     line_number = next(line_no for cum_len, line_no in comment_line_mapping if start_index < cum_len)
-
-                #                     if clean_equations:
-                #                         equation = clean_equation(equation)
-                #                     temp_dict[file_name].append({
-                #                         'e': equation,
-                #                         'l': line_number,
-                #                         't': 'c'
-                #                     })
-
-                contents[paper_id] = gather_from_latex(latex_dict, queries, clean_equations=clean_equations, search_comments=search_comments, verbose=verbose)
-        except Exception as x:
-            if verbose:
-                print(i + 1, ':', paper_id, ':', x)
-            fails += 1
-
-    return contents, fails
+# Filtering gathers
 
 
 def sat_filter_gather(gather: Dict[str, Dict[str, list]], sat_strings: List[List[str]], forbidden_strings=['FORBIDDEN']):
@@ -382,41 +393,7 @@ def re_filter_gather(gather: Dict[str, Dict[str, list]], regexs=[], forbidden_st
     return filtered
 
 
-def clean_equation1(equation: str):
-    equation = re.sub(r'\\left(?!\w)|\\right(?!\w)', r' ', equation)
-    equation = re.sub(r'\\lparen|\\lbrack', '(', equation)
-    equation = re.sub(r'\\rparen|\\rbrack', ')', equation)
-    equation = re.sub(r'=', r' = ', equation)
-    equation = re.sub(r'(\\n\b|\\r\b|\\t\b)+', r' ', equation)
-    equation = re.sub(r'\\label\{(?s:.)*?\}', r' ', equation)
-    equation = re.sub(r'\s+', r' ', equation)
-    return equation.strip()
-
-
-def clean_equation(equation: str):
-    equation = re.sub(r'\\left(?!\w)|\\right(?!\w)', r' ', equation)
-    equation = re.sub(r'\\lparen|\\lbrack', '(', equation)
-    equation = re.sub(r'\\rparen|\\rbrack', ')', equation)
-
-    equation = re.sub(r'=', r' = ', equation)
-    equation = re.sub(r'&', r' & ', equation)
-    equation = re.sub(r', \\quad|, \\qquad', r' & ', equation)
-
-    equation = re.sub(r'(\\n\b|\\r\b|\\t\b|\\quad|\\qquad|%)+', r' ', equation)
-    equation = re.sub(r'\\label\{(?s:.)*?\}', r' ', equation)
-    equation = re.sub(r'\s+', r' ', equation)
-    return equation.strip()
-
-
-def clean_gather(gather: Dict[str, Dict[str, list]]):
-    r"""def clean_equation(match):
-    content = match.group(0)
-    # Remove \begin{...}...\end{...} wrappers
-    content = re.sub(r'\\begin{.*?}|\\end{.*?}', '', content, flags=re.DOTALL)
-    # Remove $$ or $ or \[...\] or \(...\)
-    content = re.sub(r'^\$\$|^\$|^\[|^\(|\$\$$|\$$|\]$|\)$', '', content, flags=re.DOTALL)
-    return content.strip()"""
-    pass
+# Interpreting gathers
 
 
 def gather_equations(gather):
@@ -463,14 +440,16 @@ def gather_to_df(gather: Dict[str, Dict[str, List[Dict[str, str]]]]) -> pd.DataF
         gather: dictionary (key is paper id) of dictionaries (key is file name)
         of lists of dictionaries (equations and their line numbers)
     Returns:
-        pandas DataFrame with columns: 'paper_id', 'file_name', 'line_number', 'equation'
+        pandas DataFrame with columns: 'paper_id', 'file_name', 'line_number', 'source', 'equation'
+        where 'source' is 'body' if the equation is in the body of the latex
+        and 'comment' if it is in a latex comment
     """
     data = []
     for paper_id, file_dict in gather.items():
         for file_name, eq_list in file_dict.items():
             for eq_dict in eq_list:
-                data.append([paper_id, file_name, eq_dict['l'], eq_dict['e']])
-    df = pd.DataFrame(data, columns=['paper_id', 'file_name', 'line_number', 'equation'])
+                data.append([paper_id, file_name, eq_dict['l'], 'body' if eq_dict['t'] == 'b' else 'comment', eq_dict['e']])
+    df = pd.DataFrame(data, columns=['paper_id', 'file_name', 'line_number', 'source', 'equation'])
     return df.sort_values(['paper_id', 'file_name', 'line_number']).reset_index(drop=True)
 
 
