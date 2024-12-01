@@ -179,22 +179,101 @@ def split_latex(txt: str):
     return onlytxt, onlycomments
 
 
+def count_unescaped_dollar_signs(txt: str):
+    return len(re.findall(r'(?<!\\)\$', txt))
+
+
+def char_index_to_line_mapping(text: str):
+    lines = text.splitlines(keepends=True)  # Retain line endings for accurate indexing
+    cumulative_length = 0  # Tracks the cumulative character position in the content
+    # Create a mapping of cumulative character position to line number
+    mapping = []
+    for line_no, line in enumerate(lines, start=1):
+        cumulative_length += len(line)
+        mapping.append((cumulative_length, line_no))
+    return mapping
+
+
+def gather_from_latex(latex_files_dict, queries, clean_equations=True, search_comments=True, verbose=False):
+    r"""
+    Returns a dictionary of lists of dictionaries:
+    Containing the regular expression matches of each of the files.
+    """
+    temp_dict = {file_name: [] for file_name in latex_files_dict}
+    for file_name, content in latex_files_dict.items():
+        text, comments = split_latex(content)
+        text_line_mapping = char_index_to_line_mapping(text)
+
+        for query in queries:
+            # matches in text
+            for match in re.finditer(query, text):
+                equation = match.group()  # Extract the full equation
+                start_index = match.start()  # Start position of the match
+                # Find the line number corresponding to the start index
+                line_number = next(line_no for cum_len, line_no in text_line_mapping if start_index < cum_len)
+
+                if clean_equations:
+                    equation = clean_equation(equation)
+                temp_dict[file_name].append({
+                    'e': equation,
+                    'l': line_number,
+                    't': 'l'
+                })
+            
+            # matches in comments
+            # each comment block is checked separately because they may not compile,
+            # e.g. regular expression for equation search may result in strings that are not equations
+            if search_comments:
+                comment_line_mapping = char_index_to_line_mapping(comments)
+                
+                for i, comment_block in enumerate(re.finditer(commented_block_patterns(), comments), start=1):
+                    comment_block_start_index = comment_block.start()                        
+                    comment_block_line_number = next(line_no for cum_len, line_no in comment_line_mapping if comment_block_start_index < cum_len)
+                    if verbose:
+                        print(f'Comment block {i}: start index: {comment_block_start_index}, line number: {comment_block_line_number}')
+                    if count_unescaped_dollar_signs(comment_block.group()) % 2 != 0:
+                        if verbose:
+                            print(f'Uneven number of unescaped dollar signs ($) in comment block {i}: {comment_block.group()}. Skipping this comment block.')
+                        continue
+
+                    comment_block_line_mapping = char_index_to_line_mapping(comment_block.group())
+
+                    for match in re.finditer(query, comment_block.group()):
+                        equation = match.group()
+                        start_index = match.start()
+                        line_number = comment_block_line_number - 1 + next(line_no for cum_len, line_no in comment_block_line_mapping if start_index < cum_len)
+
+                        if clean_equations:
+                            equation = clean_equation(equation)
+                        temp_dict[file_name].append({
+                            'e': equation,
+                            'l': line_number,
+                            't': 'c'
+                        })
+    return temp_dict
+
+
 def gather_latex(arxiv_ids, queries=[], all_latex=False, remove_version=False,
-                 clean_equations=True, verbose=False, sleep=1, sleep_burst=10):
+                 clean_equations=True, search_comments=True,
+                 sleep=1, sleep_burst=10, verbose=False):
     """
     Args:
         arxiv_ids: list of arXiv IDs
         queries: regular expression to search for in each latex file
         all_latex: if True, returns all the latex content of the .gz / tar.gz files
         remove_version: if True, remove the version number from the arXiv ID
+        clean_equations: if True, clean each equation using the clean_equation function
+        search_comments: if True, search for the queries in latex comments as well
+        (these may not compile so results may be less reliable for equation gathering)
         sleep: time to wait between API requests
         sleep_burst: number of requests to make before waiting
     Returns: 
         if all_latex=True, returns a dictionary of dictionaries:
         { id: { file_name: content } }
         if all_latex=False, returns a dictionary of dictionaries of lists of dictionaries:
-        { id: { file_name: [{'e': str, 'l': int}] } }
-        containing the regular expression matches in the latex content and the corresponding line numbers
+        { id: { file_name: [{'e': str, 'l': int, 't': str}] } }
+        containing the regular expression matches in the latex content, the corresponding line numbers,
+        and the type of content ('l' - latex or 'c' - comment) in which the equation was found
     """
 
     if not queries and not all_latex:
@@ -207,7 +286,7 @@ def gather_latex(arxiv_ids, queries=[], all_latex=False, remove_version=False,
         if i % sleep_burst == 0 and i != 0:
             time.sleep(sleep)
         try:
-            if paper_id[-2] == 'v' and remove_version:
+            if 'v' in paper_id[-4:] and remove_version:
                 paper_id = paper_id[:-2]
                 if verbose:
                     print(f'{i + 1} Removed version to get {paper_id}')
@@ -215,38 +294,48 @@ def gather_latex(arxiv_ids, queries=[], all_latex=False, remove_version=False,
                 contents[paper_id] = fetch_arxiv_latex(paper_id, verbose=verbose)
             else:
                 latex_dict = fetch_arxiv_latex(paper_id, verbose=verbose)
-                temp_dict = {file_name: [] for file_name in latex_dict}
-                for file_name, content in latex_dict.items():
 
-                    comments = re.sub(r'([^%\n]*)(%.*\n?)?\n?',  lambda m: '\n' if m.group(1) and not m.group(2) else m.group(2), content)
-                    # TODO: iterate over these too and extract equations if number of $ is even etc. 
-                    
-                    # Change content: remove commented out lines by substituting them with newlines
-                    content = re.sub(r'%.*\n', '\n', content)
 
-                    lines = content.splitlines(keepends=True)  # Retain line endings for accurate indexing
-                    cumulative_length = 0  # Tracks the cumulative character position in the content
-                    # Create a mapping of cumulative character position to line number
-                    line_mapping = []
-                    for line_no, line in enumerate(lines, start=1):
-                        cumulative_length += len(line)
-                        line_mapping.append((cumulative_length, line_no))
+                # temp_dict = {file_name: [] for file_name in latex_dict}
 
-                    for query in queries:
-                        temp_line_mapping = deepcopy(line_mapping)
-                        for match in re.finditer(query, content):
-                            equation = match.group()  # Extract the full equation
-                            start_index = match.start()  # Start position of the match
+                # for file_name, content in latex_dict.items():
+                #     text, comments = split_latex(content)
+                #     text_line_mapping = char_index_line_mapping(text)
+                #     comment_line_mapping = char_index_line_mapping(comments)
 
-                            # Find the line number corresponding to the start index
-                            line_number = next(line_no for cum_len, line_no in temp_line_mapping if start_index < cum_len)
-                            if clean_equations:
-                                equation = clean_equation(equation)
-                            temp_dict[file_name].append({
-                                'e': equation,
-                                'l': line_number
-                            })
-                contents[paper_id] = temp_dict
+                #     for query in queries:
+                #         for match in re.finditer(query, text):
+                #             equation = match.group()  # Extract the full equation
+                #             start_index = match.start()  # Start position of the match
+                #             # Find the line number corresponding to the start index
+                #             line_number = next(line_no for cum_len, line_no in text_line_mapping if start_index < cum_len)
+
+                #             if clean_equations:
+                #                 equation = clean_equation(equation)
+                #             temp_dict[file_name].append({
+                #                 'e': equation,
+                #                 'l': line_number,
+                #                 't': 'l'
+                #             })
+                        
+                #         if search_comments:
+                #             for comment_block in re.finditer(commented_block_patterns(), comments):
+                #                 if count_unescaped_dollar_signs(comment_block.group()) % 2 != 0:
+                #                     continue
+                #                 for match in re.finditer(query, comment_block.group()):
+                #                     equation = match.group()
+                #                     start_index = match.start()
+                #                     line_number = next(line_no for cum_len, line_no in comment_line_mapping if start_index < cum_len)
+
+                #                     if clean_equations:
+                #                         equation = clean_equation(equation)
+                #                     temp_dict[file_name].append({
+                #                         'e': equation,
+                #                         'l': line_number,
+                #                         't': 'c'
+                #                     })
+
+                contents[paper_id] = gather_from_latex(latex_dict, queries, clean_equations=clean_equations, search_comments=search_comments, verbose=verbose)
         except Exception as x:
             if verbose:
                 print(i + 1, ':', paper_id, ':', x)

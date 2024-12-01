@@ -37,9 +37,7 @@ def test_constant_computing_patterns():
 def test_commented_lines_regex():
     content = '% comment 1 \n NOCOMMENT        % comment 2 \n NOCOMMENT % comment 3 \n'
     assert re.sub(r'%.*\n', '\n', content) == '\n NOCOMMENT        \n NOCOMMENT \n'
-    
     content = '% comment 1 \n NOCOMMENT % comment 2 \n NOCOMMENT     \n NOCOMMENT \n NOCOMMENT % comment 3 \n NOCOMMENT \n'
-
     comments = re.sub(r'([^%\n]*)(%.*\n?)?\n?',  lambda m: '\n' if m.group(1) and not m.group(2) else m.group(2), content)
     assert comments == '% comment 1 \n% comment 2 \n\n\n% comment 3 \n\n'
     assert len(comments.splitlines()) == len(content.splitlines())
@@ -48,6 +46,15 @@ def test_commented_lines_regex():
 def test_split_latex():
     content = ' % COMMENT1 \n % COMMENT2 \n NOCOMMENT \n NOCOMMENT \n NOCOMMENT \n % COMMENT3 \n \n \n'
     assert split_latex(content) == (' \n \n NOCOMMENT \n NOCOMMENT \n NOCOMMENT \n \n \n \n', '% COMMENT1 \n% COMMENT2 \n\n\n\n% COMMENT3 \n\n\n')
+
+
+def test_count_unescaped_dollar_signs():
+    content = r'$$ $$ \$ $ \$ \$ \$ $$ tjtjt$\$$j\$tjt'
+    assert count_unescaped_dollar_signs(content) == 9
+
+
+def test_char_index_to_line_mapping():
+    assert char_index_to_line_mapping('aaa\nbbbb\ncccc\nddddd') == [(4, 1), (9, 2), (14, 3), (19, 4)]
 
 
 if __name__ == "__main__":
