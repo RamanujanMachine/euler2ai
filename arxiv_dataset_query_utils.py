@@ -149,9 +149,15 @@ def word_count(vocabulary, papers_of_interest, include_titles=True):
     return word_count
 
 
-def count_OOVs(vocabulary, papers_of_interest):
+def count_OOVs(vocabulary, papers_of_interest, include_titles=True):
     oov_count = 0
     for paper in papers_of_interest:
+        if include_titles:
+            title = deepcopy(paper['title'])
+            title = clean_abstract(title)
+            for word in title.split():
+                if word not in vocabulary:
+                    oov_count += 1
         abstract = deepcopy(paper['abstract'])
         abstract = clean_abstract(abstract)
         for word in abstract.split():

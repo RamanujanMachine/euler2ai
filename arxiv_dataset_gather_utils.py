@@ -1,3 +1,6 @@
+# Contains functions used for gathering LaTeX from given arXiv IDs and processing the LaTeX content.
+
+
 import io
 import tarfile
 import gzip
@@ -17,7 +20,7 @@ from copy import deepcopy
 
 def gather_latex(arxiv_ids, queries=[], all_latex=False, remove_version=False,
                  clean_equations=True, search_comments=True,
-                 sleep=1, sleep_burst=10, verbose=False):
+                 sleep=1, sleep_burst=5, verbose=False):
     """
     Args:
         arxiv_ids: list of arXiv IDs
@@ -188,7 +191,17 @@ def fetch_arxiv_latex(arxiv_id, verbose=False):
 # Regular expressions
 
 
+def equation_environments():
+    return ['equation', 'align', 'gather', 'multline', 'split', 'alignat', 'cases', 'eqnarray']
+
+
 def equation_patterns(inner_string=''):
+    r"""
+    It is important to use finditer instead of findall in order
+    to access matches as strings: match.group().
+    The regex for $ $ equations no longer returns a single group,
+    but three groups: the first $ and the last $, and the content in between.
+    """
     # make . include newlines: ?s:.
     equation_pattern =  r'\\begin{equation}(?s:.)*?\\end{equation}|' + \
                         r'\\begin{align}(?s:.)*?\\end{align}|' + \
@@ -206,13 +219,18 @@ def equation_patterns(inner_string=''):
                                     r'\\begin{alignat\*}(?s:.)*?\\end{alignat\*}|' + \
                                     r'\\begin{cases\*}(?s:.)*?\\end{cases\*}|' + \
                                     r'\\begin{eqnarray\*}(?s:.)*?\\end{eqnarray\*}'
-    inline_pattern =    r'\$\$(?s:.)*?\$\$|' + \
-                        r'(?<!\\)\$(?:(?!\\\$)(?s:.))*?\$' + \
+    inline_pattern =    r'(?<!\\)\$\$(?s:.)*?(?<!\\)\$\$|' + \
+                        r'(?<!\\)(\$)((?s:.)*?)(?<!\\)(\$)' + \
                         r'|\\\[(?s:.)*?\\\]|' + \
                         r'\\\((?s:.)*?\\\)|' + \
                         r'\\begin{math}(?s:.)*?\\end{math}'
     # (?<!\\)\$((?:[^$]|(?<!\\)\$)+?)\$
-    # r'(?<!\\)\$(?:(?!\\\$).)*?\$' 
+    # r'(?<!\\)\$(?:(?!\\\$).)*?\$'
+    # '(?<!\\)(\$)(?s:.)*?(?<!\\)(\$)'
+    # it is important to use finditer instead of findall to access matches as strings: match.group()
+    # since the regex that came after this one: (which worked except for $ \$ $ --> $ \$ $, instead came empty)
+    # r'(?<!\\)\$(?:(?!\\\$)(?s:.))*?\$'
+    # no longer returns a single group, but three groups: the first $ and the last $, and the content in between.
     return_string = '(' + equation_pattern + '|' + equation_pattern_unnumbered + '|' + inline_pattern + ')'
     if inner_string:
         return_string = return_string.replace('(?s:.)*?', inner_string)
@@ -267,16 +285,28 @@ def count_unescaped_dollar_signs(txt: str):
 
 
 def clean_equation(equation: str):
-    equation = re.sub(r'\\left(?!\w)|\\right(?!\w)', r' ', equation)
-    equation = re.sub(r'\\lparen|\\lbrack', '(', equation)
-    equation = re.sub(r'\\rparen|\\rbrack', ')', equation)
-
-    equation = re.sub(r'=', r' = ', equation)
-    equation = re.sub(r'&', r' & ', equation)
-    equation = re.sub(r', \\quad|, \\qquad', r' & ', equation)
-
-    equation = re.sub(r'(\\n\b|\\r\b|\\t\b|\\quad|\\qquad|%)+', r' ', equation)
     equation = re.sub(r'\\label\{(?s:.)*?\}', r' ', equation)
+    equation = re.sub(r'\\left(?!\w)|\\right(?!\w)', r' ', equation)
+    equation = re.sub(r'\\lparen|\\lbrack|\(', ' ( ', equation)
+    equation = re.sub(r'\\rparen|\\rbrack|\)', ' ) ', equation)
+    # equation = re.sub(r'(?<!\\sum_)(\\lbrace|\{)', ' { ', equation) # TODO: curly braces will require some more work. not when: equations, sum, prod, }{, etc.
+    # equation = re.sub(r'\\rbrace|\}', ' } ', equation)
+    equation = re.sub(r'\\cdots|\\ldots|\.\.|\\ddots|\\dots', r' ... ', equation)
+
+    equation = re.sub(r'\\cdot(?!s)', r' * ', equation) # TODO: replace \cdots with ... before feeding to GPT? yes - see below
+    equation = re.sub(r'=', ' = ', equation)
+    equation = re.sub(r'\+', ' + ', equation)
+    equation = re.sub(r'-', ' - ', equation)
+    equation = re.sub(r'/', ' / ', equation)
+    equation = re.sub(r'\*|\\times', ' * ', equation)
+    # equation = re.sub(r'\^', '**', equation) # TODO: more complicated - e.g. ^{\infty}
+
+    equation = re.sub(r'\$\$', r' $$ ', equation)
+    equation = re.sub(r'(?<!\\|\$)\$(?!\$)', r' $ ', equation)
+    equation = re.sub(r'&', r' & ', equation)
+    equation = re.sub(r',\s*\\quad|,\s*\\qquad', r' && ', equation) # && will be an equation separator.
+
+    equation = re.sub(r'(\\n\b|\\r\b|\\r\\n\b|\\t\b|\\quad|\\qquad|%)+', r' ', equation)
     equation = re.sub(r'\s+', r' ', equation)
     return equation.strip()
 
@@ -378,7 +408,7 @@ def sat_filter_gather(gather: Dict[str, Dict[str, list]], sat_strings: List[List
 
 def re_filter_gather(gather: Dict[str, Dict[str, list]], regexs=[], forbidden_strings=['FORBIDDEN']):
     if not regexs:
-        regexs = [cf_patterns(), r'\\pi.*?=.*?\\sum|\\sum.*?=.*?\\pi']
+        regexs = [cf_patterns(), constant_computing_patterns(r'\pi'), r'a_n\s*=|a(n)\s*=|b_n\s*=|b(n)\s*=']
 
     filtered = {
         id:
@@ -391,6 +421,15 @@ def re_filter_gather(gather: Dict[str, Dict[str, list]], regexs=[], forbidden_st
     }
 
     return filtered
+
+
+def extract_equation_contents_gather():
+    r"""
+    Will remove the environment rappers from the equations in the gather.
+    Will also split groups of equations that appear together into separate equations where necessary.
+    e.g. in splits.
+    """
+    pass
 
 
 # Interpreting gathers

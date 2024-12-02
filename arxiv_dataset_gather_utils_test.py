@@ -1,4 +1,4 @@
-from arxiv_dataset_utils import *
+from arxiv_dataset_gather_utils import *
 
 
 def test_fetch_arxiv_latex():
@@ -21,8 +21,8 @@ def test_equation_patterns():
     assert re.findall(equation_patterns(), r'\\$ \$ thth \$') == [] # do not match escaped $ symbols
     # gave trouble in the past:
     tester =  r"""then we see that the coefficient on the lowest degree term of $E e^{-\alpha
-    z} U$ is $E e^{-\alpha} D / \alpha^{D + 1}$, so """
-    assert re.findall(equation_patterns(), tester) == ['$E e^{-\\alpha\n    z} U$', '$E e^{-\\alpha} D / \\alpha^{D + 1}$']
+    z} U$ is $E e^{-\alpha} D / \alpha^{D + 1}$, so \$ $ \$ $ $ $ $$ \$$$"""
+    assert [s.group() for s in re.finditer(equation_patterns(), tester)] == ['$E e^{-\\alpha\n    z} U$', '$E e^{-\\alpha} D / \\alpha^{D + 1}$', r'$ \$ $', '$ $', r'$$ \$$$']
 
 
 def test_constant_computing_patterns():
@@ -55,6 +55,17 @@ def test_count_unescaped_dollar_signs():
 
 def test_char_index_to_line_mapping():
     assert char_index_to_line_mapping('aaa\nbbbb\ncccc\nddddd') == [(4, 1), (9, 2), (14, 3), (19, 4)]
+
+
+def test_gather():
+    ids = ['1711.00459', '2004.00090', '1907.00205', '2308.11829', '1806.03346']
+    gather, fails = gather_latex(ids, verbose=False)
+    assert fails == 0
+    assert len(gather) == len(ids)
+    assert all([isinstance(v, dict) for v in gather.values()])
+    assert len(gather_equations(gather)) == 2525
+    filtered = re_filter_gather(gather, [cf_patterns(), constant_computing_patterns(r'\pi'), r'a_n\s*=|a(n)\s*=|b_n\s*=|b(n)\s*='])
+    assert len(gather_equations(filtered)) == 149
 
 
 if __name__ == "__main__":
