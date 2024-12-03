@@ -1,15 +1,34 @@
 from arxiv_dataset_gather_utils import *
 
 
+def test_get_gzip_name():
+    arxiv_id = '0704.0068'
+    latex_url = f"https://arxiv.org/e-print/{arxiv_id}"
+    response = urllib.request.urlopen(latex_url)
+    assert response.getcode() == 200
+    data = response.read()
+    assert get_gzip_name(data) == 'Kiz.TeX'
+
+    arxiv_id = '2004.00090'
+    latex_url = f"https://arxiv.org/e-print/{arxiv_id}"
+    response = urllib.request.urlopen(latex_url)    
+    assert response.getcode() == 200
+    data = response.read()
+    name = get_gzip_name(data)
+    if name.split('.')[-1].lower() == 'tex':
+        print(name)
+
+
 def test_fetch_arxiv_latex():
-    # Test that the function fetch_arxiv_latex works as expected
     arxiv_id = "2104.14722"
     latex_files_content = fetch_arxiv_latex(arxiv_id)
     assert isinstance(latex_files_content, dict)
     assert len(latex_files_content) > 0
     assert all([isinstance(k, str) for k in latex_files_content.keys()])
     assert all([isinstance(v, str) for v in latex_files_content.values()])
-    assert all([k.endswith('.tex') or k.endswith('.Tex') or k.endswith('.TEX') for k in latex_files_content.keys()])
+    assert all([k.lower().endswith('.tex') for k in latex_files_content.keys()])
+
+    assert fetch_arxiv_latex('1106.0222') == {} # no latex files in this example
 
     arxiv_id = "0707.0047" # this example has only one file, so it is ultimately opened as a gz file and not tar.gz
     # perhaps should be a test of decode_gz instead of fetch_arxiv_latex

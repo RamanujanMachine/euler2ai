@@ -13,6 +13,7 @@ import pandas as pd
 from IPython.display import display
 from IPython.core.display import HTML
 from copy import deepcopy
+import json
 
 
 # Gathering LaTeX content from arXiv - main function
@@ -20,18 +21,22 @@ from copy import deepcopy
 
 def gather_latex(arxiv_ids, queries=[], all_latex=False, remove_version=False,
                  clean_equations=True, search_comments=True,
-                 sleep=1, sleep_burst=5, verbose=False):
+                 sleep=1, sleep_burst=5, verbose=False, miniverbose=False, save=''):
     """
     Args:
-        arxiv_ids: list of arXiv IDs
-        queries: regular expression to search for in each latex file
-        all_latex: if True, returns all the latex content of the .gz / tar.gz files
-        remove_version: if True, remove the version number from the arXiv ID
-        clean_equations: if True, clean each equation using the clean_equation function
-        search_comments: if True, search for the queries in latex comments as well
+        * arxiv_ids: list of arXiv IDs
+        * queries: regular expression to search for in each latex file.
+        Default is regular expression for equations.
+        * all_latex: if True, returns all the latex content of the .gz / tar.gz files
+        * remove_version: if True, remove the version number from the arXiv ID
+        * clean_equations: if True, clean each equation using the clean_equation function
+        * search_comments: if True, search for the queries in latex comments as well
         (these may not compile so results may be less reliable for equation gathering)
-        sleep: time to wait between API requests
-        sleep_burst: number of requests to make before waiting
+        * sleep: time to wait between API requests
+        * sleep_burst: number of requests to make before waiting
+        * verbose: if True, print more information
+        * miniverbose: if True, only print the index of the paper being handled
+        and its arXiv ID
     Returns:
         A tuple containing
         1. LaTeX content of the arXiv papers in the following format:
@@ -52,6 +57,8 @@ def gather_latex(arxiv_ids, queries=[], all_latex=False, remove_version=False,
     fails = 0
 
     for i, paper_id in enumerate(arxiv_ids):
+        if verbose or miniverbose:
+            print(f'{i + 1}: {paper_id}')
         if i % sleep_burst == 0 and i != 0:
             time.sleep(sleep)
         try:
@@ -68,6 +75,10 @@ def gather_latex(arxiv_ids, queries=[], all_latex=False, remove_version=False,
             if verbose:
                 print(i + 1, ':', paper_id, ':', x)
             fails += 1
+
+    if save:
+        with open(save+'.json', 'w') as f:
+            json.dump(contents, f)
 
     return contents, fails
 
@@ -94,7 +105,7 @@ def get_gzip_name(data):
                 filename += byte
             return filename.decode('utf-8')
         else:
-            return None
+            return 'NO_NAME'
 
 
 def decode_gz(data, verbose=False):
@@ -117,9 +128,9 @@ def decode_gz(data, verbose=False):
                 if verbose:
                     print(f'Member {i}: {member.name}')
                 # Check if it's a file, not a directory
-                if member.isfile() and member.name.split('.')[-1] in ['tex', 'TeX', 'TEX']:
+                if member.isfile() and member.name.split('.')[-1].lower() == 'tex': # in ['tex', 'TeX', 'TEX']:
                     file_data = tar.extractfile(member).read()
-                    # Decode using utf-8 for all files
+                    # Decode
                     decoded = False
                     i = 0
                     while not decoded and i <= 1:
@@ -133,18 +144,19 @@ def decode_gz(data, verbose=False):
     except tarfile.ReadError:
         # If it's not a tar.gz, try to open as gz
         name = get_gzip_name(data)
-        with gzip.open(io.BytesIO(data), mode='rb') as gz:
-            file_data = gz.read()
-            decoded = False
-            i = 0
-            while not decoded and i <= 1:
-                decoder = decoders[i]
-                try:
-                    file_content = file_data.decode(decoder) # ("latin-1")
-                    decoded = True
-                except UnicodeDecodeError:
-                    i += 1
-            latex_files_content[name] = file_content
+        if name.split('.')[-1].lower() == 'tex':
+            with gzip.open(io.BytesIO(data), mode='rb') as gz:
+                file_data = gz.read()
+                decoded = False
+                i = 0
+                while not decoded and i <= 1:
+                    decoder = decoders[i]
+                    try:
+                        file_content = file_data.decode(decoder) # ("latin-1")
+                        decoded = True
+                    except UnicodeDecodeError:
+                        i += 1
+                latex_files_content[name] = file_content
     return latex_files_content
 
 
@@ -184,6 +196,9 @@ def fetch_arxiv_latex(arxiv_id, verbose=False):
             except Exception as e:
                 if verbose:
                     print(f"Error extracting tar.gz / gz: {e}")
+        else:
+            if verbose:
+                print('Is not gzip')
 
     return latex_files_content
 
@@ -263,7 +278,7 @@ def split_latex(txt: str):
     Splits latex text into actual latex code and comments.
     Keeps the original line breaks.
     """
-    pattern = r'([^%\n]*)(%.*)?(\n?)'
+    pattern = r'([^%\n]*)(%.*)?(\n?)' # TODO: fix this so that it does not match escaped %s
     onlytxt = re.sub(pattern, lambda m: m.group(3) if m.group(2) and not m.group(1) else m.group(1) + m.group(3), txt)
     onlycomments = re.sub(pattern, lambda m: m.group(3) if not m.group(2) else m.group(2) + m.group(3), txt)
     return onlytxt, onlycomments
@@ -291,7 +306,7 @@ def clean_equation(equation: str):
     equation = re.sub(r'\\rparen|\\rbrack|\)', ' ) ', equation)
     # equation = re.sub(r'(?<!\\sum_)(\\lbrace|\{)', ' { ', equation) # TODO: curly braces will require some more work. not when: equations, sum, prod, }{, etc.
     # equation = re.sub(r'\\rbrace|\}', ' } ', equation)
-    equation = re.sub(r'\\cdots|\\ldots|\.\.|\\ddots|\\dots', r' ... ', equation)
+    equation = re.sub(r'\\cdots|\\ldots|\.\.|\\ddots|\\dots|\\dotsb', r' ... ', equation)
 
     equation = re.sub(r'\\cdot(?!s)', r' * ', equation) # TODO: replace \cdots with ... before feeding to GPT? yes - see below
     equation = re.sub(r'=', ' = ', equation)
@@ -304,9 +319,9 @@ def clean_equation(equation: str):
     equation = re.sub(r'\$\$', r' $$ ', equation)
     equation = re.sub(r'(?<!\\|\$)\$(?!\$)', r' $ ', equation)
     equation = re.sub(r'&', r' & ', equation)
-    equation = re.sub(r',\s*\\quad|,\s*\\qquad', r' && ', equation) # && will be an equation separator.
+    equation = re.sub(r',\s*\\quad\b|,\s*\\qquad\b', r' && ', equation) # && will be an equation separator.
 
-    equation = re.sub(r'(\\n\b|\\r\b|\\r\\n\b|\\t\b|\\quad|\\qquad|%)+', r' ', equation)
+    equation = re.sub(r'(\\n\b|\\r\b|\\r\\n\b|\\t\b|\\quad\b|\\qquad\b|%)+', r' ', equation)
     equation = re.sub(r'\s+', r' ', equation)
     return equation.strip()
 
