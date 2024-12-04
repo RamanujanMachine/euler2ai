@@ -20,7 +20,7 @@ import json
 
 
 def gather_latex(arxiv_ids, queries=[], all_latex=False, remove_version=False,
-                 clean_equations=True, search_comments=True,
+                 search_comments=True, clean_equations=False, 
                  sleep=1, sleep_burst=5, verbose=False, miniverbose=False, save=''):
     """
     Args:
@@ -29,9 +29,10 @@ def gather_latex(arxiv_ids, queries=[], all_latex=False, remove_version=False,
         Default is regular expression for equations.
         * all_latex: if True, returns all the latex content of the .gz / tar.gz files
         * remove_version: if True, remove the version number from the arXiv ID
-        * clean_equations: if True, clean each equation using the clean_equation function
         * search_comments: if True, search for the queries in latex comments as well
-        (these may not compile so results may be less reliable for equation gathering)
+        * clean_equations: if True, clean each equation using the clean_equation function
+        (these may not compile so results may be less reliable for equation gathering).
+        Default is False.
         * sleep: time to wait between API requests
         * sleep_burst: number of requests to make before waiting
         * verbose: if True, print more information
@@ -278,10 +279,27 @@ def split_latex(txt: str):
     Splits latex text into actual latex code and comments.
     Keeps the original line breaks.
     """
-    pattern = r'([^%\n]*)(%.*)?(\n?)' # TODO: fix this so that it does not match escaped %s
+    pattern = r'((?:\\%|[^%\n])*)(%.*)?(\n?)' # originally r'((?:\\%|[^%\n])*)(%.*)?(\n?)', fixed this so that it does not split at escaped % - \\%:
     onlytxt = re.sub(pattern, lambda m: m.group(3) if m.group(2) and not m.group(1) else m.group(1) + m.group(3), txt)
     onlycomments = re.sub(pattern, lambda m: m.group(3) if not m.group(2) else m.group(2) + m.group(3), txt)
     return onlytxt, onlycomments
+
+
+def compare_split_latex(txt, verbose=False):
+    """
+    Compare original line to components: latex code, comment.
+    """
+    onlylatex, onlycomments = split_latex(txt)
+
+    original_lines = txt.splitlines()
+    latex_lines = onlylatex.splitlines()
+    comment_lines = onlycomments.splitlines()
+
+    dataforframe = []
+    for i, line in enumerate(original_lines):
+        dataforframe.append([i, line, latex_lines[i], comment_lines[i]])
+
+    return pd.DataFrame(dataforframe, columns=['line_number', 'original_line', 'latex_code', 'comment'])
 
 
 def char_index_to_line_mapping(text: str):

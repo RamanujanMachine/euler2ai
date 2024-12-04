@@ -20,8 +20,7 @@ def test_get_gzip_name():
 
 
 def test_fetch_arxiv_latex():
-    arxiv_id = "2104.14722"
-    latex_files_content = fetch_arxiv_latex(arxiv_id)
+    latex_files_content = fetch_arxiv_latex("2104.14722")
     assert isinstance(latex_files_content, dict)
     assert len(latex_files_content) > 0
     assert all([isinstance(k, str) for k in latex_files_content.keys()])
@@ -30,9 +29,9 @@ def test_fetch_arxiv_latex():
 
     assert fetch_arxiv_latex('1106.0222') == {} # no latex files in this example
 
-    arxiv_id = "0707.0047" # this example has only one file, so it is ultimately opened as a gz file and not tar.gz
+    # this example has only one file, so it is ultimately opened as a gz file and not tar.gz
     # perhaps should be a test of decode_gz instead of fetch_arxiv_latex
-    latex_files_content = fetch_arxiv_latex(arxiv_id)
+    latex_files_content = fetch_arxiv_latex("0707.0047")
     assert list(latex_files_content.keys()) == ['mitoma-nisikawa_arXiv-submission.tex']
 
 
@@ -63,8 +62,19 @@ def test_commented_lines_regex():
 
 
 def test_split_latex():
+    assert split_latex('') == ('', '')
+    assert split_latex('NOCOMMENT') == ('NOCOMMENT', '')
+    assert split_latex('% COMMENT') == ('', '% COMMENT')
+    assert split_latex('$10\\%$') == ('$10\\%$', '') # see 0903.4378 line 183 - prompted fix to prevent matching of escaped % symbols
+
     content = ' % COMMENT1 \n % COMMENT2 \n NOCOMMENT \n NOCOMMENT \n NOCOMMENT \n % COMMENT3 \n \n \n'
-    assert split_latex(content) == (' \n \n NOCOMMENT \n NOCOMMENT \n NOCOMMENT \n \n \n \n', '% COMMENT1 \n% COMMENT2 \n\n\n\n% COMMENT3 \n\n\n')
+    split = split_latex(content)
+    assert len(split[0].splitlines()) == len(split[1].splitlines())
+    assert split == (' \n \n NOCOMMENT \n NOCOMMENT \n NOCOMMENT \n \n \n \n', '% COMMENT1 \n% COMMENT2 \n\n\n\n% COMMENT3 \n\n\n')
+
+    content = 'not a comment % comment \n       not a comment \\% still not a commment % comment        \n \n       % this is a comment on last line test.'
+    assert len(split[0].splitlines()) == len(split[1].splitlines())
+    assert split_latex(content) == ('not a comment \n       not a comment \\% still not a commment \n \n       ', '% comment \n% comment        \n\n% this is a comment on last line test.')
 
 
 def test_count_unescaped_dollar_signs():
