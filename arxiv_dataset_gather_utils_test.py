@@ -1,4 +1,5 @@
 from arxiv_dataset_gather_utils import *
+from latex_string_for_testing_parsers import latex_test_str
 
 
 def test_get_gzip_name():
@@ -86,7 +87,7 @@ def test_char_index_to_line_mapping():
     assert char_index_to_line_mapping('aaa\nbbbb\ncccc\nddddd') == [(4, 1), (9, 2), (14, 3), (19, 4)]
 
 
-def test_gather():
+def test_gather_latex():
     ids = ['1711.00459', '2004.00090', '1907.00205', '2308.11829', '1806.03346']
     gather, fails = gather_latex(ids, verbose=False)
     assert fails == 0
@@ -95,6 +96,15 @@ def test_gather():
     assert len(gather_equations(gather)) == 2525
     filtered = re_filter_gather(gather, [cf_patterns(), constant_computing_patterns(r'\pi'), r'a_n\s*=|a(n)\s*=|b_n\s*=|b(n)\s*='])
     assert len(gather_equations(filtered)) == 149
+
+
+# TODO: test_clean_equation()
+
+
+def test_clean_gather():
+    gather = {'1': gather_from_latex({'1': latex_test_str()}, [equation_patterns()], clean_equations=False)}
+    cleaned = clean_gather(gather)
+    assert len(gather_equations(cleaned)) == len(gather_equations(gather))
 
 
 if __name__ == "__main__":

@@ -352,7 +352,7 @@ def compare_equation_cleaning(arxiv_id, queries=[], verbose=False):
     return pd.concat([dirtydf.rename(columns={'equation': 'original_equation'}), cleandf['equation'].rename("cleaned_equation")], axis=1)
 
 
-def gather_from_latex(latex_files_dict, queries, clean_equations=True, search_comments=True, verbose=False):
+def gather_from_latex(latex_files_dict, queries, search_comments=True, clean_equations=False, verbose=False):
     r"""
     Returns a dictionary of lists of dictionaries
     containing the regular expression matches of each of the files.
@@ -415,6 +415,26 @@ def gather_from_latex(latex_files_dict, queries, clean_equations=True, search_co
     return temp_dict
 
 
+# Cleaning gathers
+
+
+def clean_gather(gather):
+    r"""
+    Cleans all the equations in a gather and returns a gather with the same keys.
+    """
+    cleaned = {
+        id:
+            {
+            file:
+                [{**eq, 'e': clean_equation(eq['e'])} for eq in ls]
+            for file, ls in id_dict.items()
+            }
+        for id, id_dict in gather.items()
+    }
+
+    return cleaned
+
+
 # Filtering gathers
 
 
@@ -425,6 +445,8 @@ def sat_filter_gather(gather: Dict[str, Dict[str, list]], sat_strings: List[List
         sat_strings: list of lists (referred to as tup), all the strings in at least one list must be present in a string
         for it to be admitted to the filtered gather
         forbidden_strings: if one of these is present in a string, it is not admitted to the filtered gather
+    Returns:
+        A filtered gather with the same keys as the input gather.
     """
     filtered = {
         id:
