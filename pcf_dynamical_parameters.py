@@ -1,7 +1,4 @@
-# This file will contain code for calculating convergence rate and gcd growth rate parameters efficiently
-# See testing_coboundary_via_limits_31_10_24.ipynb
-
-from ramanujantools import Matrix, Limit
+from ramanujantools import Limit
 from ramanujantools.pcf import PCF
 
 import sympy as sp
@@ -9,164 +6,175 @@ import numpy as np
 import mpmath as mm
 import scipy as sc
 
-from typing import Tuple, Collection
-from multimethod import multimethod
+from typing import Tuple, Collection, List
 import matplotlib.pyplot as plt
 
 
-def logerrors(pcf: PCF, depth: int, limit=None) -> Collection[float]:
+class PCFDynamics():
     """
-    Calculates the log-errors of the pcf at the given depths.
+    Class for calculating the (Blind-delta) dynamical parameters of a PCF.
+    The zeroth value in returns of convergent-related methods (`errors`, `q_reds`, `delta`)
+    corresponds to the first convergent (A matrix * first recursion matrix substitution),
+    and so on.
+
+    NOTE: this class counts depth = 1 <-> pcf.A() * M1,
+    and this is the first convergent supported by the class.
+    Depth must be a positive integer.
+
+    `pcf.limit` counts convergent indices 0 <-> I, 1 <-> pcf.A(), 2 <-> pcf.A() * M1
+    `pcf.delta` returns according to 'previous' matrix of `Limit` class, so first two values
+    for depth = 1, 2 are not useful.
+    (there zeroth convergent is identity matrix, depth = 1 returns).
+    Hence both substitutions into limit for convergents and into delta for delta must be shifted
+    by 2. We denote CIDS (CONVERGENT_INDEX_DEFINIION_SHIFT) = 2.
     """
-    if limit is None:
-        limit = pcf.limit(list(range(1, depth + 1)), start=1)
-    return [mm.log(abs(mm.mp.mpf(limit - pcf.limit(depth).as_float())), 10) for i in range(1, depth + 1)]
 
 
-def convergence_rate(pcf: PCF, depth: int, limit=None) -> Tuple[float, float, float]:
-    r"""
-    Calculates the parameters of the convergence rate of the pcf by fitting up to depth:
-    $log(error(n)) = A \cdot nlog(n) + B \cdot n + C \cdot log(n)$
-    Returns:
-        A, B, C
-    """
-    return sc.optimize.curve_fit(PCFDynamicalParameters.paramfit, np.arange(1, depth + 1), logerrors(pcf, depth, limit=limit), maxfev=10000)[0]
-
-
-class PCFDynamicalParameters():
-    """
-    This class is used to calculate the delta, convergence rate and gcd growth rate parameters of a PCF.
-    The depth is counted from 0, corresponding to the A matrix. So the ith convergent is at index i.
-    In all methods requiring limit evaluation, if a limit is not given as an argument and the PCFDynamicalParameters
-    object has a limit attribute, it is used. Otherwise, the empirical limit is calculated (to depth * 2 as in Blind Delta).
-    Note: since the convergents are cached, using this class requires a lot of memory for large depths.
-    (~36 MB for depth 4000 for PCF(2*n + 1, n**2))
-
-    TODO: Implement q_reduced methods + plot.
-
-    NOTE: best not to use for depths greater than 4000 at the moment
-
-    NOTE: bridge_convergents modification TO BE IMPLEMENTED:
-    max_cachable_convergents will be used for a new method of calculating convergents quickly.
-    If more than max_cachable_convergents convergents are calculated, max_cachable_convergents are saved as a dictionary
-    with key being depth and the distribution of the convergents uniform up to the last depth calculated.
-    A minimum distance between cached convergents is also given (this both speeds up the serach when looking for the nearest cached
-    convergent and also saves memory).
-    
-    Args:
-        pcf: PCF object
-        limit: The limit to use in calculations (optional, not recommended since its precision is not updated).
-        max_cachable_convergents: The maximum number of convergents to cache. TO BE IMPLEMENTED.
-        min_distance_between_cached_convergents: The minimum distance between cached convergents. TO BE IMPLEMENTED.
-    """
-    def __init__(self, pcf: PCF, limit=None, max_cachable_convergents=4500, min_distance_between_cached_convergents=100):
+    def __init__(self, pcf: PCF):
         self.pcf = pcf
-        self.limit = limit
-        self.max_cachable_convergents = max_cachable_convergents
-        self.min_distance_between_cached_convergents = min_distance_between_cached_convergents
-        self.depth = 0
-        self.convergents = [self.pcf.A()]
 
-    def bridge_convergents(self, depth: int):
-        """
-        Calculates the missing convergents up to depth and updates the convergents attribute.
-        """
-        if depth < 0:
-            raise ValueError('`depth` must be non-negative.')
-        if self.depth < depth:
-            # NOTE: limit(1, 2, 3).current is actually the 0th, 1st, 2nd convergent
-            new_limits = self.pcf.limit(list(range(1, depth - self.depth + 1)), start = self.depth + 1)
-            self.convergents += [self.convergents[-1] * limit.current for limit in new_limits]
-            self.depth = depth
+    
+    @staticmethod
+    def CIDS():
+        return 2 # CONVERGENT_INDEX_DEFINIION_SHIFT between pcf.limit and our implementation
+    
 
-    @multimethod
-    def deltas(self, depths: Collection[int], limit=None): # noqa: F811
-        """
-        Calculates the deltas of the pcf at the given depths.
-        Raises:
-            ValueError: If `depths` contains non-positive integers.
-        """
-        depths = sorted(list(set(depths)))
-        if depths[0] < 1:
-            raise ValueError('`depths` must contain only positive integers.')
-        if limit is None:
-            if self.limit is None:
-                self.bridge_convergents(2 * depths[-1])
-                limit = Limit(self.convergents[2 * depths[-1]], self.convergents[2 * depths[-1] - 1]).as_float()
-            else:
-                limit = self.limit
-        self.bridge_convergents(depths[-1])
-        return [Limit(self.convergents[depth], self.convergents[depth - 1]).delta(limit) for depth in depths]
-    
-    @multimethod
-    def deltas(self, depth: int, limit=None): # noqa: F811
-        """
-        Returns a sequence of deltas up to depth.
-        Note that the depth is started at 1, corresponding to the 1st convergent.
-        (Delta of the 0th convgergent is undefined since the denominator is 1.)
-        """
-        return self.deltas(list(range(1, depth + 1)), limit=limit)
+    def check_positive(self, depth):
+        if depth < 1:
+            raise ValueError('Depth must be positive.')
 
-    def delta(self, depth: int, limit=None):
+
+    def convergence_rate(self, depth: int, limit=None, fit_NOA=False, maxfev=10000) -> Tuple[float, float, float]:
+        r"""
+        Calculates the parameters of the convergence rate of the pcf by fitting up to depth:
+        $log(error(n)) = A \cdot nlog(n) + B \cdot n + C \cdot log(n)$
+        Args:
+            depth: The depth to fit up to. See `depths_for_fit` for the depths used.
+            limit: The limit to use in calculations (optional, not recommended since its precision is not updated).
+            fit_NOA: Whether to fit the model without the A parameter (if A is close to 0). If True, A is set to 0.
+        Returns:
+            A, B, C
         """
-        Returns the delta of the pcf at depth.
-        """
-        return self.deltas([depth], limit=limit)[0]
-    
-    def plot_deltas(self, depth: int, limit=None):
-        fig = plt.plot(np.arange(1, depth + 1), self.deltas(depth, limit=limit), label=r'$\delta$')
-        plt.title(r'$\delta$')
-        plt.xlabel('Depth (n)')
-        return fig
-    
-    @multimethod
-    def logerrors(self, depths: Collection[int], limit=None): # noqa: F811
-        """
-        Calculates the log-errors of the pcf at the given depths.
-        """
-        depths = sorted(list(set(depths)))
-        if limit is None:
-            if self.limit is None:
-                self.bridge_convergents(2 * depths[-1]) # [blind_limit], calculate this efficiently using last existing convergent
-                limit = Limit(self.convergents[2 * depths[-1]], self.convergents[2 * depths[-1] - 1]).as_float()
-            else:
-                limit = self.limit
+        self.check_positive(depth)
+        fit_depths = self.depths_for_fit(depth)
+        if fit_NOA:
+            return sc.optimize.curve_fit(self.paramfit_NOA, fit_depths, self.errors(fit_depths, limit=limit, log=True), maxfev=maxfev)[0]
         else:
-            self.bridge_convergents(depths[-1])
-        return [mm.log(abs(mm.mp.mpf(limit - Limit(self.convergents[depth], self.convergents[depth - 1]).as_float())), 10) for depth in depths]
+            return sc.optimize.curve_fit(self.paramfit, fit_depths, self.errors(fit_depths, limit=limit, log=True), maxfev=maxfev)[0]
+
+
+    def q_red_growth_rate(self, depth: int, fit_NOA=False, maxfev=10000,
+                          as_in_blind_delta=False, verbose=False) -> Tuple[float, float, float]:
+        r"""
+        Calculates the parameters of the reduced denominator growth rate of the pcf by fitting up to depth:
+        $log(q_red(n)) = A \cdot nlog(n) + B \cdot n + C \cdot log(n)$
+        Args:
+            depth: The depth to fit up to. See `depths_for_fit` for the depths used.
+            fit_NOA: Whether to fit the model without the A parameter (if A is close to 0). If True, A is set to 0.
+            as_in_blind_delta: Whether to fit the model as in the blind-delta method (A is set to 0 if close to 0).
+            Overrides fit_NOA.
+        Returns:
+            A, B, C
+        """
+        FACTORIAL_REDUCTION_TOLERANCE = 5e-2 # from Blind-delta paper for depth 2000
+
+        self.check_positive(depth)
+        fit_depths = self.depths_for_fit(depth)
+        
+        if not as_in_blind_delta:
+            if fit_NOA:
+                params = sc.optimize.curve_fit(self.paramfit_NOA, fit_depths, self.q_reds(fit_depths, log=True), maxfev=maxfev)[0]
+                return tuple([0] + list(params))
+            else:
+                return sc.optimize.curve_fit(self.paramfit, fit_depths, self.q_reds(fit_depths, log=True), maxfev=maxfev)[0]
+            
+        else:
+            params = sc.optimize.curve_fit(self.paramfit, fit_depths, self.q_reds(fit_depths, log=True), maxfev=maxfev)[0]
+            if abs(params[0]) < FACTORIAL_REDUCTION_TOLERANCE:
+                if verbose:
+                    print(f'Factorial reduction detected. Fitting with reduced model.')
+                params = sc.optimize.curve_fit(self.paramfit_NOA, fit_depths, self.q_reds(fit_depths, log=True), maxfev=maxfev)[0]
+                return tuple([0] + list(params))
+            else:
+                if verbose:
+                    print(f'No factorial reduction, sticking with full model.')
+                return tuple(params)
+        
     
-    @multimethod
-    def logerrors(self, depth: int, limit=None): # noqa: F811
-        """
-        Returns a sequence of log-errors up to depth.
-        """
-        if not (hasattr(self, 'logerrors_cache') and hasattr(self, 'logerrors_limit_cache') \
-            and len(self.logerrors_cache) >= depth and (self.logerrors_limit_cache == limit or limit is None)):
-            self.logerrors_cache = self.logerrors(list(range(1, depth + 1)), limit=limit)
-            self.logerrors_limit_cache = Limit(self.convergents[2 * depth], self.convergents[2 * depth - 1]).as_float() if limit is None else limit
-        return self.logerrors_cache[:depth+1]
-    
-    def logerror(self, depth: int, limit=None):
-        """
-        Returns the log-error of the pcf at depth.
-        """
-        return self.logerrors([depth], limit=limit)[0]
-    
+    def delta(self, depth: int, limit=None) -> float:
+        self.check_positive(depth)
+        return self.pcf.delta(depth + self.CIDS(), limit=limit)
+    # CIDS is because delta used Limit.previous instead of Limit.current
+    # so depth=1 corresponds to 2nd convergent of `Limit` class, i.e. pcf.A() * M1
+    # meaning depth=1 in our terms
+
+
+    @staticmethod
+    def depths_for_fit(depth):
+        return sorted(list(set([6, depth // 8, depth // 4, depth // 2, depth])))
+
+
     @staticmethod
     def paramfit(x, A, B, C):
         return A*x*np.log(x) + B*x + C*np.log(x)
 
-    def convergence_rate(self, depth: int, limit=None) -> Tuple[float, float, float]:
-        r"""
-        Calculates the parameters of the convergence rate of the pcf by fitting up to depth:
-        $log(error(n)) = A \cdot nlog(n) + B \cdot n + C \cdot log(n)$
-        Returns:
-            A, B, C
+
+    @staticmethod
+    def paramfit_NOA(x, B, C):
+        return B*x + C*np.log(x)
+
+
+    def errors(self, depths: List[int], limit=None, log=False) -> Collection[float]:
         """
-        return sc.optimize.curve_fit(self.paramfit, np.arange(1, depth + 1), self.logerrors(depth, limit=limit), maxfev=10000)[0]
+        Calculates the log-errors of the pcf at the given depths.
+        Depth 1 corresponds to the 1st convergent (A matrix * first recursion matrix substitution).
+        Args:
+            depths: The depths to calculate the errors at.
+            limit: The limit to use in calculations (optional, not recommended since its precision is not updated).
+            log: Whether to return the log of the errors.
+        """
+        depths = sorted(list(set(depths)))
+        depth_to_ind = {depth: i for i, depth in enumerate(list(range(1, depths[-1] + 1)))}
+        self.check_positive(depths[-1])
+
+        if limit is None:
+            limits = self.pcf.limit(list(range(self.CIDS(), 2 * depths[-1] + self.CIDS())))
+            limit = limits[-1].as_float()
+        else:
+            limits = self.pcf.limit(list(range(self.CIDS(), depths[-1] + self.CIDS())))
+
+        if log:
+            return [mm.log(abs(mm.mp.mpf(limit - limits[depth_to_ind[depth]].as_float())), 10) for depth in depths]
+        else:
+            return [abs(mm.mp.mpf(limit - limits[depth_to_ind[depth]].as_float())) for depth in depths]
+
     
-    def plot_logerrors(self, depth: int, limit=None, fit=True, display_digits=5):
-        fig = plt.plot(np.arange(1, depth + 1), self.logerrors(depth, limit=limit), label=r'Data')
+    @ staticmethod
+    def q_red(limit: Limit):
+        p, q = limit.as_rational()
+        gcd = sp.gcd(p, q)
+        return q / gcd
+
+
+    def q_reds(self, depths: List[int], log=False) -> Collection[float]:
+        """
+        Calculates the reduced denominators of the pcf convergents for the given depths.
+        Depth 1 corresponds to the 1st convergent (A matrix * first recursion matrix substitution).
+        """
+        depths = sorted(list(set(depths)))
+        depth_to_ind = {depth: i for i, depth in enumerate(list(range(1, depths[-1] + 1)))}
+        self.check_positive(depths[-1])
+
+        limits = self.pcf.limit(list(range(self.CIDS(), depths[-1] + self.CIDS())))
+
+        if log:
+            return [mm.log(self.q_red(limits[depth_to_ind[depth]]), 10) for depth in depths]
+        else:
+            return [self.q_red(limits[depth_to_ind[depth]]) for depth in depths]
+
+
+    def plot_errors(self, depth, limit=None, fit=True, display_digits=5):
+        fig = plt.plot(np.arange(1, depth + 1), self.errors(list(range(1, depth + 1)), limit=limit, log=True), label=r'Data')
         plt.title(r'$\log(\epsilon)$')
         plt.xlabel('Depth (n)')
         if fit:
@@ -175,56 +183,23 @@ class PCFDynamicalParameters():
             plt.plot(np.arange(1, depth + 1), self.paramfit(np.arange(1, depth + 1), A, B, C), label=label)
             plt.legend()
         return fig
-    
-    @multimethod
-    def gcds(self, depths: Collection[int]):
-        """
-        Calculates the gcds of the pcf at the given depths.
-        """
-        depths = sorted(list(set(depths)))
-        self.bridge_convergents(depths[-1])
-        return [sp.gcd(list(self.convergents[depth].col(-1))) for depth in depths]
-    
-    @multimethod
-    def gcds(self, depth: int):
-        """
-        Returns a sequence of gcds up to depth.
-        """
-        if not (hasattr(self, 'gcds_cache') and len(self.gcds_cache) >= depth):
-            self.gcds_cache = self.gcds(list(range(1, depth + 1)))
-        return self.gcds_cache[:depth+1]
-    
-    def gcd(self, depth: int):
-        """
-        Returns the gcd of the pcf at depth.
-        """
-        return self.gcds([depth])[0]
 
-    def gcd_growth_rate(self, depth: int, fit_from=0) -> Tuple[float, float, float]:
-        r"""
-        Calculates the parameters of the gcd growth rate of the pcf by fitting up to depth:
-        $log(gcd(n)) = A \cdot nlog(n) + B \cdot n + C \cdot log(n)$
-        Args:
-            fit_from: The index to start fitting from.
-            Default is 0, meaning from the 1st convergent (since gcd is calculated from the 1st convergent onwards).
-        Returns:
-            A, B, C
-        Raises:
-            ValueError: If `fit_from` > `depth`.
-        """
-        if fit_from > depth:
-            raise ValueError('`fit_from` must be less than `depth`.')
-        return sc.optimize.curve_fit(self.paramfit, np.arange(fit_from+1, depth + 1, dtype=np.float64),
-                                     [mm.mp.log(gcd) for gcd in self.gcds(depth)[fit_from:]], maxfev=10000)[0]
-    
-    def plot_loggcds(self, depth: int, fit=True, display_digits=5):
-        fig = plt.plot(np.arange(1, depth + 1), [mm.mp.log(gcd) for gcd in self.gcds(depth)], label=r'Data')
-        plt.title(r'$\log(gcd)$')
+
+    def plot_q_reds(self, depth, fit=True, display_digits=5):
+        fig = plt.plot(np.arange(1, depth + 1), self.q_reds(list(range(1, depth + 1)), log=True), label=r'Data')
+        plt.title(r'$\log(q_{red})$')
         plt.xlabel('Depth (n)')
         if fit:
-            A, B, C = self.gcd_growth_rate(depth, fit_from=depth//2)
+            A, B, C = self.q_red_growth_rate(depth)
             label = rf'${str(A)[:display_digits]} \cdot nlog(n) + {str(B)[:display_digits]} \cdot n + {str(C)[:display_digits]} \cdot log(n)$'
             plt.plot(np.arange(1, depth + 1), self.paramfit(np.arange(1, depth + 1), A, B, C), label=label)
             plt.legend()
+        return fig
+    
+
+    def plot_deltas(self, depth, limit=None):
+        fig = plt.plot(np.arange(1, depth + 1), self.pcf.delta_sequence(depth + 2, limit=limit)[2:], label=r'$\delta$')
+        plt.title(r'$\delta$')
+        plt.xlabel('Depth (n)')
         return fig
     
