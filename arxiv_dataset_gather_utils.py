@@ -1,4 +1,5 @@
 # Contains functions used for gathering LaTeX from given arXiv IDs and processing the LaTeX content.
+#
 
 
 import io
@@ -7,7 +8,7 @@ import gzip
 import urllib.request
 import re
 import time
-from typing import Dict, List
+from typing import Dict, List, Tuple, Callable, Optional
 import matplotlib.pyplot as plt
 import pandas as pd
 from IPython.display import display
@@ -15,13 +16,17 @@ from IPython.core.display import HTML
 from copy import deepcopy
 import json
 
+from arxiv_dataset_filter_utils import \
+    equation_patterns, commented_block_patterns, clean_equation, remove_equation_wrapper, split_equation
+
 
 # Gathering LaTeX content from arXiv - main function
 
 
 def gather_latex(arxiv_ids, queries=[], all_latex=False, remove_version=False,
-                 search_comments=True, clean_equations=False, 
-                 sleep=1, sleep_burst=5, verbose=False, miniverbose=False, save=''):
+                 search_comments=True, clean_equations=False,
+                 limit_time=None, limit_size=None,
+                 sleep=1, sleep_burst=5, verbose=False, miniverbose=False, save='') -> Tuple[Dict[str, Dict[str, List[Dict[str, str]]]], int]:
     """
     Args:
         * arxiv_ids: list of arXiv IDs
@@ -33,6 +38,15 @@ def gather_latex(arxiv_ids, queries=[], all_latex=False, remove_version=False,
         * clean_equations: if True, clean each equation using the clean_equation function
         (these may not compile so results may be less reliable for equation gathering).
         Default is False.
+
+        # TODO: ? Important to prevent getting stuck on a giant paper.
+        * limit_time: if not None, limit the time of the function to this number of seconds,
+        before returning None.
+        * limit_size: if not None, limit the size of fetched content. Return None if the size is exceeded.
+        Use getsize from arxiv_dataset_getsize_util.py to get the size of the content.
+        Normal papers should have a size of order 200,000 bytes. The example that got stuck
+        (1409.8356) has a size of 23,449,538 bytes
+
         * sleep: time to wait between API requests
         * sleep_burst: number of requests to make before waiting
         * verbose: if True, print more information
@@ -204,74 +218,7 @@ def fetch_arxiv_latex(arxiv_id, verbose=False):
     return latex_files_content
 
 
-# Regular expressions
-
-
-def equation_environments():
-    return ['equation', 'align', 'gather', 'multline', 'split', 'alignat', 'cases', 'eqnarray']
-
-
-def equation_patterns(inner_string=''):
-    r"""
-    It is important to use finditer instead of findall in order
-    to access matches as strings: match.group().
-    The regex for $ $ equations no longer returns a single group,
-    but three groups: the first $ and the last $, and the content in between.
-    """
-    # make . include newlines: ?s:.
-    equation_pattern =  r'\\begin{equation}(?s:.)*?\\end{equation}|' + \
-                        r'\\begin{align}(?s:.)*?\\end{align}|' + \
-                        r'\\begin{gather}(?s:.)*?\\end{gather}|' + \
-                        r'\\begin{multline}(?s:.)*?\\end{multline}|' + \
-                        r'\\begin{split}(?s:.)*?\\end{split}|' + \
-                        r'\\begin{alignat}(?s:.)*?\\end{alignat}|' + \
-                        r'\\begin{cases}(?s:.)*?\\end{cases}|' + \
-                        r'\\begin{eqnarray}(?s:.)*?\\end{eqnarray}'
-    equation_pattern_unnumbered =   r'\\begin{equation\*}(?s:.)*?\\end{equation\*}|' + \
-                                    r'\\begin{align\*}(?s:.)*?\\end{align\*}|' + \
-                                    r'\\begin{gather\*}(?s:.)*?\\end{gather\*}' + \
-                                    r'\\begin{multline\*}(?s:.)*?\\end{multline\*}|' + \
-                                    r'\\begin{split\*}(?s:.)*?\\end{split\*}|' + \
-                                    r'\\begin{alignat\*}(?s:.)*?\\end{alignat\*}|' + \
-                                    r'\\begin{cases\*}(?s:.)*?\\end{cases\*}|' + \
-                                    r'\\begin{eqnarray\*}(?s:.)*?\\end{eqnarray\*}'
-    inline_pattern =    r'(?<!\\)\$\$(?s:.)*?(?<!\\)\$\$|' + \
-                        r'(?<!\\)(\$)((?s:.)*?)(?<!\\)(\$)' + \
-                        r'|\\\[(?s:.)*?\\\]|' + \
-                        r'\\\((?s:.)*?\\\)|' + \
-                        r'\\begin{math}(?s:.)*?\\end{math}'
-    # (?<!\\)\$((?:[^$]|(?<!\\)\$)+?)\$
-    # r'(?<!\\)\$(?:(?!\\\$).)*?\$'
-    # '(?<!\\)(\$)(?s:.)*?(?<!\\)(\$)'
-    # it is important to use finditer instead of findall to access matches as strings: match.group()
-    # since the regex that came after this one: (which worked except for $ \$ $ --> $ \$ $, instead came empty)
-    # r'(?<!\\)\$(?:(?!\\\$)(?s:.))*?\$'
-    # no longer returns a single group, but three groups: the first $ and the last $, and the content in between.
-    return_string = '(' + equation_pattern + '|' + equation_pattern_unnumbered + '|' + inline_pattern + ')'
-    if inner_string:
-        return_string = return_string.replace('(?s:.)*?', inner_string)
-    return return_string
-
-
-def cf_patterns():
-  return r'\\cfrac\s*{\s*[^{}]*\s*}\s*{\s*[^{}]*?(?:\\cfrac\s*{\s*[^{}]*\s*}\s*{\s*[^{}]*})+\s*}|' + \
-         r'\\frac\s*{\s*[^{}]*\s*}\s*{\s*[^{}]*?(?:\\frac\s*{\s*[^{}]*\s*}\s*{\s*[^{}]*})+\s*}'
-
-
-def constant_computing_patterns(const: str):
-    const = re.escape(const)
-    return (r'place_holder\s*?=|\\=\s*?place_holder' + \
-    r'\\frac\s*{\s*[^{}]*place_holder[^{}]*\s*}\s*{\s*[^{}]*}\s*=|=\s*\\frac\s*{\s*[^{}]*place_holder[^{}]*\s*}\s*{\s*[^{}]*}' + \
-    r'\\frac\s*{\s*[^{}]*}\s*{\s*[^{}]*place_holder[^{}]*\s*}\s*=|=\s*\\frac\s*{\s*[^{}]*}\s*{\s*[^{}]*place_holder[^{}]*\s*}' + \
-    r'\\cfrac\s*{\s*[^{}]*place_holder[^{}]*\s*}\s*{\s*[^{}]*}\s*=|=\s*\\cfrac\s*{\s*[^{}]*place_holder[^{}]*\s*}\s*{\s*[^{}]*}' + \
-    r'\\cfrac\s*{\s*[^{}]*}\s*{\s*[^{}]*place_holder[^{}]*\s*}\s*=|=\s*\\cfrac\s*{\s*[^{}]*}\s*{\s*[^{}]*place_holder[^{}]*\s*}').replace('place_holder', const)
-
-
-def commented_block_patterns():
-    return r'(?m)^(?:[ \t]*%.*\n)+'
-
-
-# Processing LaTeX string
+# Processing LaTeX document
 
 
 def split_latex(txt: str):
@@ -315,41 +262,6 @@ def char_index_to_line_mapping(text: str):
 
 def count_unescaped_dollar_signs(txt: str):
     return len(re.findall(r'(?<!\\)\$', txt))
-
-
-def clean_equation(equation: str):
-    equation = re.sub(r'\\label\{(?s:.)*?\}', r' ', equation)
-    equation = re.sub(r'\\left(?!\w)|\\right(?!\w)', r' ', equation)
-    equation = re.sub(r'\\lparen|\\lbrack|\(', ' ( ', equation)
-    equation = re.sub(r'\\rparen|\\rbrack|\)', ' ) ', equation)
-    # equation = re.sub(r'(?<!\\sum_)(\\lbrace|\{)', ' { ', equation) # TODO: curly braces will require some more work. not when: equations, sum, prod, }{, etc.
-    # equation = re.sub(r'\\rbrace|\}', ' } ', equation)
-    equation = re.sub(r'\\cdots|\\ldots|\.\.|\\ddots|\\dots|\\dotsb', r' ... ', equation)
-
-    equation = re.sub(r'\\cdot(?!s)', r' * ', equation) # TODO: replace \cdots with ... before feeding to GPT? yes - see below
-    equation = re.sub(r'=', ' = ', equation)
-    equation = re.sub(r'\+', ' + ', equation)
-    equation = re.sub(r'-', ' - ', equation)
-    equation = re.sub(r'/', ' / ', equation)
-    equation = re.sub(r'\*|\\times', ' * ', equation)
-    # equation = re.sub(r'\^', '**', equation) # TODO: more complicated - e.g. ^{\infty}
-
-    equation = re.sub(r'\$\$', r' $$ ', equation)
-    equation = re.sub(r'(?<!\\|\$)\$(?!\$)', r' $ ', equation)
-    equation = re.sub(r'&', r' & ', equation)
-    equation = re.sub(r',\s*\\quad\b|,\s*\\qquad\b', r' && ', equation) # && will be an equation separator.
-
-    equation = re.sub(r'(\\n\b|\\r\b|\\r\\n\b|\\t\b|\\quad\b|\\qquad\b|%)+', r' ', equation)
-    equation = re.sub(r'\s+', r' ', equation)
-    return equation.strip()
-
-
-def compare_equation_cleaning(arxiv_id, queries=[], verbose=False):
-    cleandic = gather_latex([arxiv_id], queries=queries, clean_equations=True, search_comments=True, verbose=verbose)[0]
-    cleandf = gather_to_df(cleandic)
-    dirtydic = gather_latex([arxiv_id], queries=queries, clean_equations=False, search_comments=True, verbose=verbose)[0]
-    dirtydf = gather_to_df(dirtydic)
-    return pd.concat([dirtydf.rename(columns={'equation': 'original_equation'}), cleandf['equation'].rename("cleaned_equation")], axis=1)
 
 
 def gather_from_latex(latex_files_dict, queries, search_comments=True, clean_equations=False, verbose=False):
@@ -415,76 +327,115 @@ def gather_from_latex(latex_files_dict, queries, search_comments=True, clean_equ
     return temp_dict
 
 
-# Cleaning gathers
+# Manipulating gathers
+
+
+def compare_gather(gather, gather_func: Callable):
+    r"""
+    Compares the equations in a gather with the equations in a new gather
+    obtained by applying a function to the original gather.
+    """
+    new_gather = gather_func(deepcopy(gather))
+    return pd.concat([gather_to_df(gather).rename(columns={'equation': 'original_equation'}),
+                      gather_to_df(new_gather)['equation'].rename("new_equation")], axis=1)
+
+
+def compare_equation_cleaning(arxiv_id, queries=[], verbose=False):
+    r"""
+    Compares the original equations with equations after clean_equation
+    function is applied for the arXiv ID supplied.
+    """
+    cleandic = gather_latex([arxiv_id], queries=queries, clean_equations=True, search_comments=True, verbose=verbose)[0]
+    cleandf = gather_to_df(cleandic)
+    dirtydic = gather_latex([arxiv_id], queries=queries, clean_equations=False, search_comments=True, verbose=verbose)[0]
+    dirtydf = gather_to_df(dirtydic)
+    return pd.concat([dirtydf.rename(columns={'equation': 'original_equation'}), cleandf['equation'].rename("cleaned_equation")], axis=1)
+
+
+def apply_to_gather(equation_func: Callable, gather=None, return_func=False):
+    r"""
+    Applies a function to each equation dictionary in a gather.
+    Args:
+        * equation_func: function to apply to each equation dictionary
+        * gather: gather to apply the function to
+        * return_func: if True, returns the function instead of applying it
+    Returns:
+        * A new gather with the same keys as the input gather, or
+        * If return_func is True, returns a function that applies the equation_func to a gather.
+    Either gather or return_func must be set.
+    """
+    def func(g):
+        new_gather = {
+        id:
+            {
+            file:
+                [equation_func(eq) for eq in ls]  # {**eq, 'e': equation_func(eq['e'])}
+            for file, ls in id_dict.items()
+            }
+        for id, id_dict in deepcopy(g).items()
+        }
+        return new_gather
+
+    if return_func:
+        return func
+    elif gather is not None:
+        return func(gather)
+    else:
+        raise ValueError('Either gather or return_func must be set')
 
 
 def clean_gather(gather):
     r"""
     Cleans all the equations in a gather and returns a gather with the same keys.
     """
-    cleaned = {
-        id:
-            {
-            file:
-                [{**eq, 'e': clean_equation(eq['e'])} for eq in ls]
-            for file, ls in id_dict.items()
-            }
-        for id, id_dict in gather.items()
-    }
-
-    return cleaned
+    def clean_equation_dict(eq_dict):
+        return {**eq_dict, 'e': clean_equation(eq_dict['e'])}
+    return apply_to_gather(clean_equation_dict, gather=gather, return_func=False)
 
 
-# Filtering gathers
+def remove_equation_wrappers_gather(gather): # TODO: split relevant equation arrays into separate equations &&, &
+    r"""
+    Removes wrappers from all equations in a gather and returns a gather with the same keys.
+    """
+    return apply_to_gather(remove_equation_wrapper, gather=gather, return_func=False)
 
 
-def sat_filter_gather(gather: Dict[str, Dict[str, list]], sat_strings: List[List[str]], forbidden_strings=['FORBIDDEN']):
+def split_equations_gather(gather):
+    r"""
+    Splits all equations in a gather and returns a gather with the same keys.
+    """
+    def split_equation_dict(eq_dict):
+        return {**eq_dict, 'e': split_equation(eq_dict['e'])}
+    return apply_to_gather(split_equation_dict, gather=gather, return_func=False)
+
+
+def sat_filter_gather(sat_strings: List[List[str]], gather: Optional[Dict[str, Dict[str, List[Dict[str, str]]]]],
+                      forbidden_strings=['FORBIDDEN'], return_func=False):
     """
     Args:
         gather: dictionary (key is paper id) of dictionaries (key is file name) of lists (formulas)
         sat_strings: list of lists (referred to as tup), all the strings in at least one list must be present in a string
-        for it to be admitted to the filtered gather
-        forbidden_strings: if one of these is present in a string, it is not admitted to the filtered gather
+        for it to be admitted to the filtered gather. Regex (re) supported.
+        forbidden_strings: if one of these is present in a string, it is not admitted to the filtered gather.
+        return_func: if True, returns a function that filters a gather.
     Returns:
-        A filtered gather with the same keys as the input gather.
+        A filtered gather with the same keys as the input gather, or
+        If return_func is True, returns a function that filters a gather.
     """
-    filtered = {
-        id:
-            {
-            file:
-                [eq for eq in ls if any([all([s in eq['e'] for s in tup]) for tup in sat_strings]) and all([s not in eq['e'] for s in forbidden_strings])]
-            for file, ls in id_dict.items()
-            }
-        for id, id_dict in gather.items()
-    }
 
-    return filtered
-
-
-def re_filter_gather(gather: Dict[str, Dict[str, list]], regexs=[], forbidden_strings=['FORBIDDEN']):
-    if not regexs:
-        regexs = [cf_patterns(), constant_computing_patterns(r'\pi'), r'a_n\s*=|a(n)\s*=|b_n\s*=|b(n)\s*=']
-
-    filtered = {
-        id:
-            {
-            file:
-                [eq for eq in ls if any([re.findall(reg, eq['e']) for reg in regexs]) and not any([re.findall(reg, eq['e']) for reg in forbidden_strings])]
-            for file, ls in id_dict.items()
-            }
-        for id, id_dict in gather.items()
-    }
-
-    return filtered
-
-
-def extract_equation_contents_gather():
-    r"""
-    Will remove the environment rappers from the equations in the gather.
-    Will also split groups of equations that appear together into separate equations where necessary.
-    e.g. in splits.
-    """
-    pass
+    def sat_filter_equation_dict(eq_dict):
+        return eq_dict if any([all([re.findall(s, eq_dict['e']) for s in tup]) for tup in sat_strings]) \
+                and not any([re.findall(s, eq_dict['e']) for s in forbidden_strings]) else None
+    
+    def sat_filter(g):
+            filtered = apply_to_gather(sat_filter_equation_dict, gather=g)
+            return {id: {file: [eq for eq in eq_list if eq is not None]
+                         for file, eq_list in file_dict.items()}
+                         for id, file_dict in filtered.items()}
+    if return_func:
+        return sat_filter
+    else:
+        return sat_filter(gather)
 
 
 # Interpreting gathers

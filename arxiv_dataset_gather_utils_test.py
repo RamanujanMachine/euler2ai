@@ -1,5 +1,9 @@
 from arxiv_dataset_gather_utils import *
+from arxiv_dataset_filter_utils import *
 from latex_string_for_testing_parsers import latex_test_str
+
+
+# Fetch tests
 
 
 def test_get_gzip_name():
@@ -34,6 +38,12 @@ def test_fetch_arxiv_latex():
     # perhaps should be a test of decode_gz instead of fetch_arxiv_latex
     latex_files_content = fetch_arxiv_latex("0707.0047")
     assert list(latex_files_content.keys()) == ['mitoma-nisikawa_arXiv-submission.tex']
+
+
+# TODO: test pi unifier patterns
+
+
+# Regex tests
 
 
 def test_equation_patterns():
@@ -83,6 +93,9 @@ def test_count_unescaped_dollar_signs():
     assert count_unescaped_dollar_signs(content) == 9
 
 
+# Gather tests
+
+
 def test_char_index_to_line_mapping():
     assert char_index_to_line_mapping('aaa\nbbbb\ncccc\nddddd') == [(4, 1), (9, 2), (14, 3), (19, 4)]
 
@@ -94,8 +107,15 @@ def test_gather_latex():
     assert len(gather) == len(ids)
     assert all([isinstance(v, dict) for v in gather.values()])
     assert len(gather_equations(gather)) == 2525
-    filtered = re_filter_gather(gather, [cf_patterns(), constant_computing_patterns(r'\pi'), r'a_n\s*=|a(n)\s*=|b_n\s*=|b(n)\s*='])
-    assert len(gather_equations(filtered)) == 149
+
+
+def test_sat_filter_gather():
+    regexs = [['1', '2']]
+    gather = {'paper1': {'file1': [{'e': '1 2 3 4 5 6 7', 'l': 1, 't': 'b'}]}}
+    assert sat_filter_gather(regexs, gather) == gather
+
+    regexs = [['10']]
+    assert sat_filter_gather(regexs, gather) == {'paper1': {'file1': []}}
 
 
 # TODO: test_clean_equation()
