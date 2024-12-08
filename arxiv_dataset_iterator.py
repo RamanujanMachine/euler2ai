@@ -1,4 +1,4 @@
-# Iterates over gathers in an arXiv dataset grouped into folders of 100
+# Iterates over gathers in an arXiv dataset grouped into folders, as produced by arxiv_dataset_gather.py.
 
 
 import os
@@ -7,11 +7,13 @@ from typing import List, Optional, Generator
 
 
 def gather_iterator(arxiv_ids_of_interest: List[str], dir_origin: str, dir_destin: str,
-                    start_index: int = 0, end_index: Optional[int] = None,
+                    start_index: int = 0, end_index: Optional[int] = None, dir_size: int = 100,
                     use_dirs=False, make_dirs=False, break_bool=True, exist_ok=False,
                     verbose=False, print_every: Optional[int] = None) -> Generator[dict, None, None]:
     r"""
-    Iterates over gathers in an arXiv dataset grouped into folders of 100.
+    Iterates over gathers in an arXiv dataset grouped into folders.
+    The same list of arXiv IDs that produced the directories on which the function
+    operates must be used for consistency of indices.
 
     Setup: set use_dirs and make_dirs to True.
 
@@ -21,6 +23,8 @@ def gather_iterator(arxiv_ids_of_interest: List[str], dir_origin: str, dir_desti
         * dir_destin: the directory to save the modified gathers.
         * start_index: the index to start at.
         * end_index: the index to end at.
+        * dir_size: the number of IDs in each subdirectory.
+        Default is 100 as this is what arxiv_dataset_gather.py produces.
         * use_dirs: whether to check for and open gathers from directories.
         * make_dirs: whether to create destination directories. Set to False when testing the iterator.
         * break_bool: whether to break if a file or folder is missing, or to continue and process that which does exist.
@@ -40,13 +44,13 @@ def gather_iterator(arxiv_ids_of_interest: List[str], dir_origin: str, dir_desti
     if make_dirs:
         os.makedirs(dir_destin, exist_ok=exist_ok)
 
-    for i in range(0, len(arxiv_ids_of_interest), 100):
-        if i < start_index - start_index % 100:
+    for i in range(0, len(arxiv_ids_of_interest), dir_size):
+        if i < start_index - start_index % dir_size:
             continue
-        if (not end_index is None) and i > end_index - end_index % 100:
+        if (not end_index is None) and i > end_index - end_index % dir_size:
             break
 
-        ids = arxiv_ids_of_interest[i:i+100]
+        ids = arxiv_ids_of_interest[i:i+dir_size]
         ids = [id.replace('/', '_') for id in ids]
         dir_origin_sub = rf"{dir_origin}/{i}-{i + len(ids) - 1}__{ids[0]}__to__{ids[-1]}"
         dir_destin_sub = rf"{dir_destin}/{i}-{i + len(ids) - 1}__{ids[0]}__to__{ids[-1]}"
