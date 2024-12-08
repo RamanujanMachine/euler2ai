@@ -1,5 +1,6 @@
 # Contains functions used for gathering LaTeX from given arXiv IDs and processing the LaTeX content.
-#
+# Also contains functions for comparing and manipulating the gathered content as a pandas dataframe,
+# and some simple statistics on the gather.
 
 
 import io
@@ -8,7 +9,7 @@ import gzip
 import urllib.request
 import re
 import time
-from typing import Dict, List, Tuple, Callable, Optional
+from typing import Dict, List, Tuple, Callable, Optional, Union
 import matplotlib.pyplot as plt
 import pandas as pd
 from IPython.display import display
@@ -264,7 +265,7 @@ def count_unescaped_dollar_signs(txt: str):
     return len(re.findall(r'(?<!\\)\$', txt))
 
 
-def gather_from_latex(latex_files_dict, queries, search_comments=True, clean_equations=False, verbose=False):
+def gather_from_latex(latex_files_dict: Dict[str, str], queries, search_comments=True, clean_equations=False, verbose=False):
     r"""
     Returns a dictionary of lists of dictionaries
     containing the regular expression matches of each of the files.
@@ -330,10 +331,10 @@ def gather_from_latex(latex_files_dict, queries, search_comments=True, clean_equ
 # Manipulating gathers
 
 
-def compare_gather(gather, gather_func: Callable):
+def compare_gather(gather_func: Callable, gather: Dict[str, Dict[str, List[Dict[str, str]]]]) -> pd.DataFrame:
     r"""
     Compares the equations in a gather with the equations in a new gather
-    obtained by applying a function to the original gather.
+    obtained by applying a function to the equations of the original gather.
     """
     new_gather = gather_func(deepcopy(gather))
     return pd.concat([gather_to_df(gather).rename(columns={'equation': 'original_equation'}),
@@ -352,7 +353,8 @@ def compare_equation_cleaning(arxiv_id, queries=[], verbose=False):
     return pd.concat([dirtydf.rename(columns={'equation': 'original_equation'}), cleandf['equation'].rename("cleaned_equation")], axis=1)
 
 
-def apply_to_gather(equation_func: Callable, gather=None, return_func=False):
+def apply_to_gather(equation_func: Callable, gather: Optional[Dict[str, Dict[str, List[Dict[str, str]]]]] = None, return_func=False) \
+    -> Union[Callable, Optional[Dict[str, Dict[str, List[Dict[str, str]]]]]]:
     r"""
     Applies a function to each equation dictionary in a gather.
     Args:
@@ -362,55 +364,84 @@ def apply_to_gather(equation_func: Callable, gather=None, return_func=False):
     Returns:
         * A new gather with the same keys as the input gather, or
         * If return_func is True, returns a function that applies the equation_func to a gather.
-    Either gather or return_func must be set.
+    Raises:
+        * ValueError: Either gather or return_func must be set.
+        If both are set, a function is returned.
     """
+    if gather is None and not return_func:
+        raise ValueError('Either gather or return_func must be set.')
+
     def func(g):
         new_gather = {
         id:
             {
             file:
-                [equation_func(eq) for eq in ls]  # {**eq, 'e': equation_func(eq['e'])}
+            # If the result of equation_func(eq) is a list of equations, add them all
+            # If the result is a dictionary, add it as a single equation
+                [res if isinstance(res, dict)
+                 else item if item != '__SI__' else None
+                 for eq in ls for res in [equation_func(eq)]
+                 for item in ([res] if isinstance(res, dict)
+                              else res if isinstance(res, list)
+                              else ['__SI__'])] # SI for Single Item Dummy Value
+                # res is the result of equation_func(eq), which may be a list of equations
+                # [equation_func(eq) if isinstance(equation_func(eq), dict) else item for eq in ls for item in equation_func(eq)]  # {**eq, 'e': equation_func(eq['e'])}
             for file, ls in id_dict.items()
             }
         for id, id_dict in deepcopy(g).items()
         }
-        return new_gather
+
+        return {id: {file: [eq for eq in eq_list if eq is not None]
+                     for file, eq_list in file_dict.items()}
+                     for id, file_dict in new_gather.items()}
 
     if return_func:
         return func
     elif gather is not None:
         return func(gather)
     else:
-        raise ValueError('Either gather or return_func must be set')
+        raise ValueError('Either gather or return_func must be set.')
 
 
-def clean_gather(gather):
+def clean_gather(gather: Optional[Dict[str, Dict[str, List[Dict[str, str]]]]] = None, return_func=False) \
+    -> Union[Callable, Optional[Dict[str, Dict[str, List[Dict[str, str]]]]]]:
     r"""
     Cleans all the equations in a gather and returns a gather with the same keys.
+    If return_func is True, returns a function that cleans equations in gathers.
     """
-    def clean_equation_dict(eq_dict):
+    def clean_equation_dict(eq_dict): # clean equation for dict
         return {**eq_dict, 'e': clean_equation(eq_dict['e'])}
-    return apply_to_gather(clean_equation_dict, gather=gather, return_func=False)
+    
+    return apply_to_gather(clean_equation_dict, gather=gather, return_func=return_func)
 
 
-def remove_equation_wrappers_gather(gather): # TODO: split relevant equation arrays into separate equations &&, &
+def remove_equation_wrappers_gather(gather: Optional[Dict[str, Dict[str, List[Dict[str, str]]]]] = None, return_func=False) \
+    -> Union[Callable, Optional[Dict[str, Dict[str, List[Dict[str, str]]]]]]:
     r"""
     Removes wrappers from all equations in a gather and returns a gather with the same keys.
+    If return_func is True, returns a function that removes wrappers in gathers.
     """
-    return apply_to_gather(remove_equation_wrapper, gather=gather, return_func=False)
+    def remove_equation_wrapper_dict(eq_dict): # remove equation wrapper for dict
+        return {**eq_dict, 'e': remove_equation_wrapper(eq_dict['e'])}
+    
+    return apply_to_gather(remove_equation_wrapper_dict, gather=gather, return_func=return_func)
 
 
-def split_equations_gather(gather):
+def split_equations_gather(gather: Optional[Dict[str, Dict[str, List[Dict[str, str]]]]] = None, return_func=False) \
+    -> Union[Callable, Optional[Dict[str, Dict[str, List[Dict[str, str]]]]]]:
     r"""
     Splits all equations in a gather and returns a gather with the same keys.
+    If return_func is True, returns a function that splits equations in gathers.
     """
-    def split_equation_dict(eq_dict):
-        return {**eq_dict, 'e': split_equation(eq_dict['e'])}
-    return apply_to_gather(split_equation_dict, gather=gather, return_func=False)
+    def split_equation_dict(eq_dict): # split equation for dict
+        return [{**eq_dict, 'e': eq} for eq in split_equation(eq_dict['e'])]
+    
+    return apply_to_gather(split_equation_dict, gather=gather, return_func=return_func)
 
 
-def sat_filter_gather(sat_strings: List[List[str]], gather: Optional[Dict[str, Dict[str, List[Dict[str, str]]]]],
-                      forbidden_strings=['FORBIDDEN'], return_func=False):
+def sat_filter_gather(sat_strings: List[List[str]], gather: Optional[Dict[str, Dict[str, List[Dict[str, str]]]]] = None,
+                      forbidden_strings=['FORBIDDEN'], return_func=False) \
+                      -> Union[Callable, Optional[Dict[str, Dict[str, List[Dict[str, str]]]]]]:
     """
     Args:
         gather: dictionary (key is paper id) of dictionaries (key is file name) of lists (formulas)
@@ -420,23 +451,17 @@ def sat_filter_gather(sat_strings: List[List[str]], gather: Optional[Dict[str, D
         return_func: if True, returns a function that filters a gather.
     Returns:
         A filtered gather with the same keys as the input gather, or
-        If return_func is True, returns a function that filters a gather.
+        If return_func is True, returns a function that filters gathers based on sat_strings and forbidden_strings.
     """
+    if gather is None and not return_func:
+        raise ValueError('Either gather or return_func must be set.')
 
-    def sat_filter_equation_dict(eq_dict):
+    def sat_filter_equation_dict(eq_dict): # sat filter equation for dict
         return eq_dict if any([all([re.findall(s, eq_dict['e']) for s in tup]) for tup in sat_strings]) \
                 and not any([re.findall(s, eq_dict['e']) for s in forbidden_strings]) else None
     
-    def sat_filter(g):
-            filtered = apply_to_gather(sat_filter_equation_dict, gather=g)
-            return {id: {file: [eq for eq in eq_list if eq is not None]
-                         for file, eq_list in file_dict.items()}
-                         for id, file_dict in filtered.items()}
-    if return_func:
-        return sat_filter
-    else:
-        return sat_filter(gather)
-
+    return apply_to_gather(sat_filter_equation_dict, gather=gather, return_func=return_func)
+    
 
 # Interpreting gathers
 

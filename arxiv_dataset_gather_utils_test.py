@@ -1,5 +1,4 @@
 from arxiv_dataset_gather_utils import *
-from arxiv_dataset_filter_utils import *
 from latex_string_for_testing_parsers import latex_test_str
 
 
@@ -40,10 +39,7 @@ def test_fetch_arxiv_latex():
     assert list(latex_files_content.keys()) == ['mitoma-nisikawa_arXiv-submission.tex']
 
 
-# TODO: test pi unifier patterns
-
-
-# Regex tests
+# Regular expression tests
 
 
 def test_equation_patterns():
@@ -52,15 +48,6 @@ def test_equation_patterns():
     tester =  r"""then we see that the coefficient on the lowest degree term of $E e^{-\alpha
     z} U$ is $E e^{-\alpha} D / \alpha^{D + 1}$, so \$ $ \$ $ $ $ $$ \$$$"""
     assert [s.group() for s in re.finditer(equation_patterns(), tester)] == ['$E e^{-\\alpha\n    z} U$', '$E e^{-\\alpha} D / \\alpha^{D + 1}$', r'$ \$ $', '$ $', r'$$ \$$$']
-
-
-def test_constant_computing_patterns():
-    expected = r'\\pi\s*?=|\\=\s*?\\pi' + \
-    r'\\frac\s*{\s*[^{}]*\\pi[^{}]*\s*}\s*{\s*[^{}]*}\s*=|=\s*\\frac\s*{\s*[^{}]*\\pi[^{}]*\s*}\s*{\s*[^{}]*}' + \
-    r'\\frac\s*{\s*[^{}]*}\s*{\s*[^{}]*\\pi[^{}]*\s*}\s*=|=\s*\\frac\s*{\s*[^{}]*}\s*{\s*[^{}]*\\pi[^{}]*\s*}' + \
-    r'\\cfrac\s*{\s*[^{}]*\\pi[^{}]*\s*}\s*{\s*[^{}]*}\s*=|=\s*\\cfrac\s*{\s*[^{}]*\\pi[^{}]*\s*}\s*{\s*[^{}]*}' + \
-    r'\\cfrac\s*{\s*[^{}]*}\s*{\s*[^{}]*\\pi[^{}]*\s*}\s*=|=\s*\\cfrac\s*{\s*[^{}]*}\s*{\s*[^{}]*\\pi[^{}]*\s*}'
-    assert constant_computing_patterns(r'\pi') == expected
 
 
 def test_commented_lines_regex():
@@ -109,22 +96,60 @@ def test_gather_latex():
     assert len(gather_equations(gather)) == 2525
 
 
+def test_clean_gather():
+    gather = {'paper1': gather_from_latex({'file1': latex_test_str()}, [equation_patterns()], clean_equations=False)}
+    cleaned = clean_gather(gather=gather)
+    cleaner = clean_gather(return_func=True)
+    assert len(gather_equations(cleaned)) == len(gather_equations(gather))
+    assert cleaner(gather) == cleaned
+
+
+def test_remove_equation_wrappers_gather():
+    gather = {'paper1': {'file1': [{'e': 'NOTEQUATION \\begin{equation} equation 1 \\end{equation} NOTEQUATION', 'l': 1},
+                                   {'e': 'NOTEQUATION \\begin{math} equation 2 \\end{math} NOTEQUATION', 'l': 2},
+                                   {'e': 'NOTEQUATION \\begin{align} equation 3 \\end{align} NOTEQUATION', 'l': 3},
+                                   {'e': 'NOTEQUATION \\begin{align*} equation 4 \\end{align*} NOTEQUATION', 'l': 4},
+                                   {'e': 'NOTEQUATION $$ equation 5 $$ NOTEQUATION', 'l': 5},
+                                   {'e': 'NOTEQUATION \\[ equation 6 \\] NOTEQUATION', 'l': 6},
+                                   {'e': 'NOTEQUATION $ equation 7 $ NOTEQUATION', 'l': 7}]}}
+    removed = remove_equation_wrappers_gather(gather=gather)
+    remover = remove_equation_wrappers_gather(return_func=True)
+    assert removed == {'paper1': {'file1': [{'e': 'equation 1', 'l': 1},
+                                            {'e': 'equation 2', 'l': 2},
+                                            {'e': 'equation 3', 'l': 3},
+                                            {'e': 'equation 4', 'l': 4},
+                                            {'e': 'equation 5', 'l': 5},
+                                            {'e': 'equation 6', 'l': 6},
+                                            {'e': 'equation 7', 'l': 7}]}}
+    assert remover(gather) == removed
+
+
+def test_split_equations_gather():
+    gather = {'paper1': {'file1': [{'e': 'equation 1 \\& still equation 1 &= still equation 1 & equation 2 && equation 3', 'l': 1},
+                                   {'e': 'equation 4', 'l': 2}]}}
+    split = split_equations_gather(gather=gather)
+    splitter = split_equations_gather(return_func=True)
+    assert split == {'paper1': {'file1': [{'e': 'equation 1 \\& still equation 1 &= still equation 1', 'l': 1},
+                                          {'e': 'equation 2', 'l': 1},
+                                          {'e': 'equation 3', 'l': 1},
+                                          {'e': 'equation 4', 'l': 2}]}}
+    assert splitter(gather) == split
+
+
 def test_sat_filter_gather():
+    gather = {'paper1': {'file1': [{'e': '1 2 3 ... 7', 'l': 1, 't': 'b'}]}}
+
     regexs = [['1', '2']]
-    gather = {'paper1': {'file1': [{'e': '1 2 3 4 5 6 7', 'l': 1, 't': 'b'}]}}
-    assert sat_filter_gather(regexs, gather) == gather
+    filtered = sat_filter_gather(regexs, gather=gather)
+    sat_filter = sat_filter_gather(regexs, return_func=True)
+    assert filtered == gather
+    assert sat_filter(gather) == filtered
 
     regexs = [['10']]
-    assert sat_filter_gather(regexs, gather) == {'paper1': {'file1': []}}
-
-
-# TODO: test_clean_equation()
-
-
-def test_clean_gather():
-    gather = {'1': gather_from_latex({'1': latex_test_str()}, [equation_patterns()], clean_equations=False)}
-    cleaned = clean_gather(gather)
-    assert len(gather_equations(cleaned)) == len(gather_equations(gather))
+    filtered = sat_filter_gather(regexs, gather=gather)
+    sat_filter = sat_filter_gather(regexs, return_func=True)
+    assert filtered == {'paper1': {'file1': []}}
+    assert sat_filter(gather) == filtered
 
 
 if __name__ == "__main__":
