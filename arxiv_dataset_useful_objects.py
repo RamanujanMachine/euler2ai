@@ -1,6 +1,6 @@
 
 
-def arxiv_dataset_pth():
+def arxiv_metadata_dataset_pth():
     return r"C:\Users\totos\Desktop\arXiv dataset (kaggle)\arxiv-metadata-oai-snapshot.json"
 
 
