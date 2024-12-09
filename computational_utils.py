@@ -18,7 +18,7 @@ def mobius(matrix, z=0):
 # fold matrix
 
 
-def fold_matrix(mat, symbol, factor):
+def fold_matrix(mat, factor, symbol=n):
   folded = Matrix([[1, 0], [0, 1]])
   for i in range(factor):
     folded *= mat.subs({symbol: factor * symbol - (factor - 1 - i)})
@@ -72,7 +72,7 @@ def get_folded_pcf_limit(pcf, symbol, factor, limit, deflate_all=True):
   """
     folded * U(n+1) = U(n) * foldedpcf
   """
-  foldedmat = fold_matrix(pcf.M(), symbol, factor)
+  foldedmat = fold_matrix(pcf.M(), factor, symbol=symbol)
   foldedpcf = as_pcf(foldedmat, deflate_all=deflate_all)
   U = as_pcf_cob(foldedmat, deflate_all=deflate_all)
   return mobius(foldedpcf.A() * U.subs({n: 1}).inv() * pcf.A().inv(), limit)

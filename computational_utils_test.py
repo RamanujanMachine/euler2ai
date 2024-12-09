@@ -82,7 +82,7 @@ def test_as_pcf_polys_deflate_all_false():
 def test_fold_matrix():
     matrix = Matrix([[0, n**2], [1, 2*n + 1]])
     folded = matrix.subs({n: 3*n - 2}) * matrix.subs({n: 3*n - 1}) * matrix.subs({n: 3*n})
-    assert fold_matrix(matrix, n, 3) == folded
+    assert fold_matrix(matrix, 3, symbol=n) == folded
 
 
 def test_get_folded_pcf_limit():
