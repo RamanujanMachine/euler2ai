@@ -52,6 +52,14 @@ def split_equation(equation: str):
     return [s.strip() for s in re.split(r'(?<!\\)&&|(?<!\\)&(?:\s*)(?!=)', equation) if s != '']
 
 
+def prepare_equation_for_parsing(equation):
+    equation = re.sub(r'\+\s*\.\.\.|-\s*\.\.\.|\.\.\.', ' ', equation)
+    equation = re.sub(r'\\cfrac', r'\\frac', equation)
+    equation = re.sub(r'\\eqno|\\text{(?s:.)*?}', ' ', equation)
+    equation = re.sub(r'\\operatorname\s*{\s*ln\s*}\s*2', r'\\ln(2)', equation)
+    return equation
+
+
 # Regular expressions
 
 
@@ -109,6 +117,7 @@ def commented_block_patterns():
 def pi_unifier_patterns(const: str, return_string=False, include_iffy=False):
     r"""
     Returns a list of regex patterns that match continued fractions.
+    
     Args:
         const: the constant to be searched for.
         return_string: if True, the patterns will be concatenated into a single string

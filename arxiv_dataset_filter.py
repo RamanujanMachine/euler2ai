@@ -1,74 +1,67 @@
-from arxiv_dataset_gather_utils import clean_gather, remove_equation_wrappers_gather, sat_filter_gather
+from arxiv_dataset_gather_utils import build_pipeline_for_gather
 from arxiv_dataset_filter_utils import pi_unifier_patterns
+from arxiv_dataset_iterator import gather_iterator
 import os
 import pickle
 import json
 
 
-START_INDEX = 172656 # 172656 is Zeilberger # 1964
-END_INDEX = 172656 # 175599 # 145143 - Nature 2021 # 11586
-DIR_ORIGIN = r"C:\Users\totos\Desktop/arXiv_equations_raw - Copy (3)"
-DIR_DESTIN = r"C:\Users\totos\Desktop/arXiv_equations_filtered"
-
+# pipeline - choose what processing each gather undergoes
 CLEAN = True
-REMOVE_EQUATION_WRAPPERS = False
+REMOVE_EQUATION_WRAPPERS = True
 SAT_FILTER = [[pi_unifier_patterns(r'\pi', return_string=True, include_iffy=True)]]
+SPLIT_AT_AMPERSANDS = True
+PREPARE_FOR_PARSING = False
 
-PRINT_EVERY = 100
+# iterator - choose which gathers to process
+with open("arxiv_ids_of_interest_v1.pkl", 'rb') as f:
+    ARXIV_IDS_OF_INTEREST = pickle.load(f)
+START_INDEX = 121675 # introduced size limit # skipped 112963 - way too big # 56610 # 631 # 172656 - Zeilberger # 1964
+END_INDEX = None # 172656 # 175599 # 145143 - Nature 2021 # 11586
+DIR_ORIGIN = r"C:\Users\totos\Desktop/arXiv_equations_raw - Copy (3)"
+DIR_DESTIN = r"C:\Users\totos\Desktop/arXiv_equations_processed"
+
+# filter out large files
+MAX_FILE_SIZE_BYTES = None
+
+# other iterator options - normall no need to change
+DIR_SIZE = 100 # this is default
+BREAK_BOOL = False # whether to break if a file or folder is missing, or to continue and process what does exist
+EXIST_OK = True
+VERBOSE = True
+PRINT_EVERY = None
 
 
+pipeline_kwargs = {'clean': CLEAN,
+                   'remove_wrappers': REMOVE_EQUATION_WRAPPERS,
+                   'sat_filter': SAT_FILTER,
+                   'split_at_ampersands': SPLIT_AT_AMPERSANDS,
+                   'prepare_for_parsing': PREPARE_FOR_PARSING}
+iterator_kwargs = {'start_index': START_INDEX,
+                   'end_index': END_INDEX,
+                   'dir_size': DIR_SIZE,
+                   'use_dirs': True,
+                   'make_dirs': True,
+                   'break_bool': BREAK_BOOL,
+                   'exist_ok': EXIST_OK,
+                   'verbose': VERBOSE,
+                   'print_every': PRINT_EVERY}
 
+
+print('Building pipeline...')
+
+process_gather = build_pipeline_for_gather(**pipeline_kwargs)
 
 print('Running...')
 
-if CLEAN:
-    clean = clean_gather(return_func=True)
-if REMOVE_EQUATION_WRAPPERS:
-    remove_equation_wrappers = remove_equation_wrappers_gather(return_func=True)
-if SAT_FILTER:
-    sat_filter = sat_filter_gather(SAT_FILTER, return_func=True)
+for arg_dict in gather_iterator(ARXIV_IDS_OF_INTEREST, DIR_ORIGIN, DIR_DESTIN, **iterator_kwargs):
+    # print('index', arg_dict['ind'], 'id', arg_dict['id'])
 
-os.makedirs(DIR_DESTIN, exist_ok=True)
-
-with open("arxiv_ids_of_interest_v1.pkl", 'rb') as f:
-    arxiv_ids_of_interest = pickle.load(f)
-
-
-for i in range(0, len(arxiv_ids_of_interest), 100):
-    if i < START_INDEX - START_INDEX % 100:
+    if MAX_FILE_SIZE_BYTES is not None and os.path.getsize(arg_dict['file_origin']) > MAX_FILE_SIZE_BYTES:
+        print('skipping', arg_dict['file_origin'])
         continue
-    if (not END_INDEX is None) and i > END_INDEX - END_INDEX % 100:
-        break
 
-    ids = arxiv_ids_of_interest[i:i+100]
-    ids = [id.replace('/', '_') for id in ids]
+    gather = process_gather(arg_dict['gather'])
 
-    dir_orig = rf"{DIR_ORIGIN}/{i}-{i + len(ids) - 1}__{ids[0]}__to__{ids[-1]}"
-    dir_dest = rf"{DIR_DESTIN}/{i}-{i + len(ids) - 1}__{ids[0]}__to__{ids[-1]}"
-
-    if not os.path.isdir(dir_orig):
-        print(f"{dir_orig} doesn't exist")
-        break
-    os.makedirs(dir_dest, exist_ok=True)
-    
-    for ind, id in enumerate(ids, start=i):
-        if ind < START_INDEX:
-            continue
-        if (not END_INDEX is None) and ind > END_INDEX:
-            break
-        if ind % PRINT_EVERY == 0:
-            print(f"{ind}: {id}")
-        
-        with open(f"{dir_orig}/{ind}__{id}.json", 'r') as f:
-            gather = json.load(f)
-        
-        if CLEAN:
-            gather = clean_gather(gather)
-        if REMOVE_EQUATION_WRAPPERS:
-            gather = remove_equation_wrappers(gather)
-        if SAT_FILTER:
-            gather = sat_filter(gather)
-
-        with open(f"{dir_dest}/{ind}__{id}.json", 'w') as f:
-            json.dump(gather, f)
-        
+    with open(arg_dict['file_destin'], 'w') as f:
+        json.dump(gather, f)

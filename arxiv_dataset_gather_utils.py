@@ -18,7 +18,8 @@ from copy import deepcopy
 import json
 
 from arxiv_dataset_filter_utils import \
-    equation_patterns, commented_block_patterns, clean_equation, remove_equation_wrapper, split_equation
+    equation_patterns, commented_block_patterns, clean_equation, \
+        remove_equation_wrapper, split_equation, prepare_equation_for_parsing
 
 
 # Gathering LaTeX content from arXiv - main function
@@ -267,12 +268,20 @@ def count_unescaped_dollar_signs(txt: str):
 
 def gather_from_latex(latex_files_dict: Dict[str, str], queries, search_comments=True, clean_equations=False, verbose=False):
     r"""
-    Returns a dictionary of lists of dictionaries
-    containing the regular expression matches of each of the files.
-    Format: { file_name: [{'e': str, 'l': int, 't': str}] }
-    where 'e' contains a match, 'l' is the line number of the match,
-    and 't' is the type of the part of content ('b' - latex body or 'c' - latex comment)
-    in which the equation was found.
+    Args:
+        * latex_files_dict: dictionary of tex_file_name (string) : content (string)
+        * queries: regular expression to search for in each latex file.
+        * search_comments: if True, search for the queries in latex comments as well
+        * clean_equations: if True, clean each equation using the clean_equation function
+        (these may not compile so results may be less reliable for equation gathering).
+        Default is False.
+        * verbose: if True, print more information
+    Returns: 
+        A dictionary of lists of dictionaries containing the regular expression
+        matches of each of the files. Format: { file_name: [{'e': str, 'l': int, 't': str}] }
+        where 'e' contains a match, 'l' is the line number of the match,
+        and 't' is the type of the part of content ('b' - latex body or 'c' - latex comment)
+        in which the equation was found.
     """
     temp_dict = {file_name: [] for file_name in latex_files_dict}
     for file_name, content in latex_files_dict.items():
@@ -331,20 +340,31 @@ def gather_from_latex(latex_files_dict: Dict[str, str], queries, search_comments
 # Manipulating gathers
 
 
-def compare_gather(gather_func: Callable, gather: Dict[str, Dict[str, List[Dict[str, str]]]]) -> pd.DataFrame:
+def compare_gather(gather_func: Callable, gather: Dict[str, Dict[str, List[Dict[str, str]]]], keep_indices=True) -> pd.DataFrame:
     r"""
     Compares the equations in a gather with the equations in a new gather
     obtained by applying a function to the equations of the original gather.
+    Args:
+        * gather_func: function to apply to each equation dictionary
+        * gather: gather to compare
+        * keep_indices: if True, keeps the original indices of the equations.
+        Default is True to make comparison easier.
     """
     new_gather = gather_func(deepcopy(gather))
-    return pd.concat([gather_to_df(gather).rename(columns={'equation': 'original_equation'}),
-                      gather_to_df(new_gather)['equation'].rename("new_equation")], axis=1)
+    return pd.concat([gather_to_df(gather, keep_indices=keep_indices).rename(columns={'equation': 'original_equation'}),
+                      gather_to_df(new_gather, keep_indices=keep_indices)['equation'].rename("new_equation")], axis=1)
 
 
 def compare_equation_cleaning(arxiv_id, queries=[], verbose=False):
     r"""
     Compares the original equations with equations after clean_equation
     function is applied for the arXiv ID supplied.
+    Args:
+        * arxiv_id: arXiv ID
+        * queries: regular expression to search for in each latex file.
+        Default is regular expression for equations.
+        * keep_indices: if True, keeps the original indices of the equations
+        * verbose: if True, print more information
     """
     cleandic = gather_latex([arxiv_id], queries=queries, clean_equations=True, search_comments=True, verbose=verbose)[0]
     cleandf = gather_to_df(cleandic)
@@ -427,28 +447,19 @@ def remove_equation_wrappers_gather(gather: Optional[Dict[str, Dict[str, List[Di
     return apply_to_gather(remove_equation_wrapper_dict, gather=gather, return_func=return_func)
 
 
-def split_equations_gather(gather: Optional[Dict[str, Dict[str, List[Dict[str, str]]]]] = None, return_func=False) \
-    -> Union[Callable, Optional[Dict[str, Dict[str, List[Dict[str, str]]]]]]:
-    r"""
-    Splits all equations in a gather and returns a gather with the same keys.
-    If return_func is True, returns a function that splits equations in gathers.
-    """
-    def split_equation_dict(eq_dict): # split equation for dict
-        return [{**eq_dict, 'e': eq} for eq in split_equation(eq_dict['e'])]
-    
-    return apply_to_gather(split_equation_dict, gather=gather, return_func=return_func)
-
-
 def sat_filter_gather(sat_strings: List[List[str]], gather: Optional[Dict[str, Dict[str, List[Dict[str, str]]]]] = None,
-                      forbidden_strings=['FORBIDDEN'], return_func=False) \
+                      forbidden_strings=['FORBIDDEN'], keep_size=False, return_func=False) \
                       -> Union[Callable, Optional[Dict[str, Dict[str, List[Dict[str, str]]]]]]:
     """
+    Use a SAT expression to filter for equations. If the SAT expression is satisfied, the equation is kept.
     Args:
-        gather: dictionary (key is paper id) of dictionaries (key is file name) of lists (formulas)
-        sat_strings: list of lists (referred to as tup), all the strings in at least one list must be present in a string
+        * gather: dictionary (key is paper id) of dictionaries (key is file name) of lists (formulas)
+        * sat_strings: list of lists (referred to as tup), all the strings in at least one list must be present in a string
         for it to be admitted to the filtered gather. Regex (re) supported.
-        forbidden_strings: if one of these is present in a string, it is not admitted to the filtered gather.
-        return_func: if True, returns a function that filters a gather.
+        * forbidden_strings: if one of these is present in a string, it is not admitted to the filtered gather.
+        * keep_size: if True, keeps the size of the gather the same by replacing equations that do not meet
+        the SAT criterion by 'SAT_FAIL'.
+        * return_func: if True, returns a function that filters a gather.
     Returns:
         A filtered gather with the same keys as the input gather, or
         If return_func is True, returns a function that filters gathers based on sat_strings and forbidden_strings.
@@ -458,10 +469,80 @@ def sat_filter_gather(sat_strings: List[List[str]], gather: Optional[Dict[str, D
 
     def sat_filter_equation_dict(eq_dict): # sat filter equation for dict
         return eq_dict if any([all([re.findall(s, eq_dict['e']) for s in tup]) for tup in sat_strings]) \
-                and not any([re.findall(s, eq_dict['e']) for s in forbidden_strings]) else None
+                and not any([re.findall(s, eq_dict['e']) for s in forbidden_strings]) \
+                else {**eq_dict, 'e': 'SAT_FAIL'} if keep_size else None
     
     return apply_to_gather(sat_filter_equation_dict, gather=gather, return_func=return_func)
+
+
+def split_equations_gather(gather: Optional[Dict[str, Dict[str, List[Dict[str, str]]]]] = None, return_func=False) \
+    -> Union[Callable, Optional[Dict[str, Dict[str, List[Dict[str, str]]]]]]:
+    r"""
+    Splits all equations in a gather at &, && characters and returns a gather with the same keys.
+    If return_func is True, returns a function that splits equations in gathers.
+    """
+    def split_equation_dict(eq_dict): # split equation for dict
+        return [{**eq_dict, 'e': eq} for eq in split_equation(eq_dict['e'])]
     
+    return apply_to_gather(split_equation_dict, gather=gather, return_func=return_func)
+
+
+def prepare_for_parsing_gather(gather: Optional[Dict[str, Dict[str, List[Dict[str, str]]]]] = None, return_func=False) \
+    -> Union[Callable, Optional[Dict[str, Dict[str, List[Dict[str, str]]]]]]:
+    r"""
+    Prepares all equations in a gather for parsing and returns a gather with the same keys.
+    If return_func is True, returns a function that prepares equations in gathers for parsing.
+    """
+    def prepare_for_parsing_dict(eq_dict): # prepare equation for dict
+        return {**eq_dict, 'e': prepare_equation_for_parsing(eq_dict['e'])}
+    
+    return apply_to_gather(prepare_for_parsing_dict, gather=gather, return_func=return_func)
+
+
+# Buildind a filtration pipeline for gathers
+
+
+def build_pipeline_for_gather(clean=True, remove_wrappers=True, sat_filter=[],
+                   split_at_ampersands=True, prepare_for_parsing=True) -> Callable:
+    r"""
+    Returns a function that processes a gather according to the specified pipeline.
+    Args:
+        * clean: if True, cleans each equation using the clean_equation function
+        * remove_wrappers: if True, removes wrappers from each equation
+        * sat_filter: list of lists (referred to as tup), all the strings in at least one list must be present in a string
+        for it to be admitted to the filtered gather. Regex (re) supported.
+        * split_at_ampersands: if True, splits each equation at & and && characters
+        * prepare_for_parsing: if True, prepares each equation for parsing
+    Returns:
+        A function that receives a gather and outputs a processed gather.
+    """
+    if clean:
+        clean_func = clean_gather(return_func=True)
+    if remove_wrappers:
+        remove_wrappers_func = remove_equation_wrappers_gather(return_func=True)
+    if sat_filter:
+        sat_filter_func = sat_filter_gather(sat_filter, return_func=True)
+    if split_at_ampersands:
+        split_at_ampersands_func = split_equations_gather(return_func=True)
+    if prepare_for_parsing:
+        prepare_for_parsing_func = prepare_for_parsing_gather(return_func=True)
+
+    def process_gather(gather):
+        if clean:
+            gather = clean_func(gather)
+        if remove_wrappers:
+            gather = remove_wrappers_func(gather)
+        if sat_filter: # filter before splitting to capture more equations
+            gather = sat_filter_func(gather)
+        if split_at_ampersands:
+            gather = split_at_ampersands_func(gather)
+        if clean:
+            gather = prepare_for_parsing_func(gather)
+
+        return gather
+    
+    return process_gather
+
 
 # Interpreting gathers
 
@@ -507,8 +588,9 @@ def average_equations_per_file(gather):
 def gather_to_df(gather: Dict[str, Dict[str, List[Dict[str, str]]]]) -> pd.DataFrame:
     """
     Args:
-        gather: dictionary (key is paper id) of dictionaries (key is file name)
+        * gather: dictionary (key is paper id) of dictionaries (key is file name)
         of lists of dictionaries (equations and their line numbers)
+        * keep_indices: if True, keeps the original indices of the equations
     Returns:
         pandas DataFrame with columns: 'paper_id', 'file_name', 'line_number', 'source', 'equation'
         where 'source' is 'body' if the equation is in the body of the latex
@@ -531,5 +613,5 @@ def gather_latex_df(arxiv_ids, queries=[], all_latex=False, remove_version=False
     return df, fails
 
 
-def display_df(df: pd.DataFrame, max_rows: int = 10, **kwargs):
-    display(HTML(df.to_html(max_rows=max_rows, **kwargs)))
+def display_df(df: pd.DataFrame, max_rows: int = 10, from_ind=0, to_ind=-1, **kwargs):
+    display(HTML(df.iloc[from_ind:to_ind].to_html(max_rows=max_rows, **kwargs)))
