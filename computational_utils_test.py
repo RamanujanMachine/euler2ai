@@ -22,15 +22,43 @@ def test_as_pcf():
                                        - 498069*n**4 + 134298*n**3 + 75897*n**2 - 44196*n + 6004))
     
 
+def test_as_pcf_deflate_all_false():
+    assert as_pcf(Matrix([[1,2], [3,4]]), deflate_all=False) == PCF(15, 18)
+    matrix = Matrix([[0, n**2], [1, 2*n + 1]])
+    folded = matrix.subs({n: 3*n - 2}) * matrix.subs({n: 3*n - 1}) * matrix.subs({n: 3*n})
+    assert as_pcf(folded, deflate_all=False) == PCF(17010*n**5 + 14175*n**4 - 4428*n**3 \
+                                                    - 3789*n**2 + 120*n + 96, \
+                                                        n**2*(1476225*n**8 - 4920750*n**7 + 4035015*n**6 + 2361960*n**5 \
+                                                              - 4482621*n**4 + 1208682*n**3 + 683073*n**2 - 397764*n + 54036))
+    assert as_pcf(Matrix([[n*(n-1), 0], [3, n**2]]), deflate_all=False) == PCF(3*n*(2*n + 1), 9*n**3*(1 - n))
+
+
 def test_as_pcf_cob():
     assert as_pcf_cob(Matrix([[1,2], [3,4]])) == Matrix([[3, 3], [0, 9]])
     assert as_pcf_cob(Matrix([[n**2, n], [2*n + 3, 2*n**2 + 2*n]])) == \
         Matrix([[1, n**2*(2*n + 1)], [0, (2*n + 1)*(2*n + 3)]])
+    assert as_pcf_cob(Matrix([[n*(n-1), 0], [3, n**2]])) == \
+        Matrix([[3*n - 3, 3*n*(n - 1)], [0, 9]])
+    
+
+def test_as_pcf_cob_deflate_all_false():
+    assert as_pcf_cob(Matrix([[1,2], [3,4]]), deflate_all=False) == Matrix([[1, 3], [0, 9]])
+    assert as_pcf_cob(Matrix([[n**2, n], [2*n + 3, 2*n**2 + 2*n]]), deflate_all=False) == \
+        Matrix([[1, n**2*(2*n + 1)], [0, (2*n + 1)*(2*n + 3)]])
+    assert as_pcf_cob(Matrix([[n*(n-1), 0], [3, n**2]]), deflate_all=False) == \
+        Matrix([[1, 3*n*(n - 1)], [0, 9]])
 
 
 def test_as_pcf_eta():
     assert as_pcf_eta(Matrix([[1,2], [3,4]])) == 3
     assert as_pcf_eta(Matrix([[n**2, n], [2*n + 3, 2*n**2 + 2*n]])) == 1
+    assert as_pcf_eta(Matrix([[n*(n-1), 0], [3, n**2]])) == 3*n
+
+
+def test_as_pcf_eta_deflate_all_false():
+    assert as_pcf_eta(Matrix([[1,2], [3,4]]), deflate_all=False) == 1
+    assert as_pcf_eta(Matrix([[n**2, n], [2*n + 3, 2*n**2 + 2*n]]), deflate_all=False) == 1
+    assert as_pcf_eta(Matrix([[n*(n-1), 0], [3, n**2]]), deflate_all=False) == 1
 
 
 def test_as_pcf_polys():
@@ -38,6 +66,17 @@ def test_as_pcf_polys():
     assert polys[0] == 3 and polys[1] == 3
     polys = as_pcf_polys(Matrix([[n**2, n], [2*n + 3, 2*n**2 + 2*n]]))
     assert polys[0] == (2*n + 3).subs({n: n - 1}) and polys[1] == 1
+    polys = as_pcf_polys(Matrix([[n*(n-1), 0], [3, n**2]]))
+    assert polys[0] == 3 and polys[1] == 3*n
+
+
+def test_as_pcf_polys_deflate_all_false():
+    polys = as_pcf_polys(Matrix([[1,2], [3,4]]), deflate_all=False)
+    assert polys[0] == 3 and polys[1] == 1
+    polys = as_pcf_polys(Matrix([[n**2, n], [2*n + 3, 2*n**2 + 2*n]]), deflate_all=False)
+    assert polys[0] == (2*n + 3).subs({n: n - 1}) and polys[1] == 1
+    polys = as_pcf_polys(Matrix([[n*(n-1), 0], [3, n**2]]), deflate_all=False)
+    assert polys[0] == 3 and polys[1] == 1
 
 
 def test_fold_matrix():
@@ -80,3 +119,19 @@ def test_check_coboundary():
     expected_cob_matrix = Matrix([[3, (3*n - 2)**2*(6*n - 1)*((3*n - 4)**2 + (6*n - 9)*(6*n - 7))],
                                   [0, ((3*n - 4)**2 + (6*n - 9)*(6*n - 7))*((3*n - 1)**2 + (6*n - 3)*(6*n - 1))]])
     assert check_coboundary(folded, folded_pcf_matrix, expected_cob_matrix, n)
+
+
+def test_full_flow():
+    matrix = Matrix([[n ** 2, 3 * n + 1], [2 * n, 2 * n + 1]])
+    pcf = as_pcf(matrix, deflate_all=True)
+    cob = as_pcf_cob(matrix, deflate_all=True)
+    polys = as_pcf_polys(matrix, deflate_all=True)
+    assert check_coboundary(polys[0]*matrix, polys[1]*pcf.M(), cob, n, exact=True)
+
+
+def test_full_flow_deflate_all_false():
+    matrix = Matrix([[n ** 2, 3 * n + 1], [2 * n, 2 * n + 1]])
+    undefpcf = as_pcf(matrix, deflate_all=False)
+    undefcob = as_pcf_cob(matrix, deflate_all=False)
+    undefpolys = as_pcf_polys(matrix, deflate_all=False)
+    assert check_coboundary(undefpolys[0]*matrix, undefpolys[1]*undefpcf.M(), undefcob, n, exact=True)

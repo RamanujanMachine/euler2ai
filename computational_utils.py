@@ -15,11 +15,7 @@ def mobius(matrix, z=0):
     return (a * z + b) / (c * z + d)
 
 
-# Deflation infrastructure (Imported from ramanujantools.pcf, works with sympy symbol n)
-# Imported
-
-
-# Fold matrix
+# fold matrix
 
 
 def fold_matrix(mat, symbol, factor):
@@ -29,7 +25,7 @@ def fold_matrix(mat, symbol, factor):
   return folded
 
 
-# As PCF infrastructure (works with sympy symbol n)
+# as pcf (works with sympy symbol n)
 
 
 def as_pcf(matrix, deflate_all=True):
@@ -49,11 +45,8 @@ def as_pcf_cob(matrix, deflate_all=True):
     matrix * coboundary $\propto$ coboundary * pcf
     """
     a, b, c, d = [cell for cell in matrix]
-    if deflate_all:
-        eta = sp.sympify(as_pcf_eta(matrix))
-    else:
-        eta = sp.Expr(1)
-    return Matrix([[1, a], [0, c]]) * Matrix([[eta.subs({n: n - 1}), 0], [0, 1]]) * Matrix([[1, 0], [0, c.subs({n: n - 1})]])
+    eta = as_pcf_eta(matrix, deflate_all=deflate_all)
+    return Matrix([[1, a], [0, c]]) * Matrix([[sp.sympify(eta).subs({n: n - 1}), 0], [0, 1]]) * Matrix([[1, 0], [0, c.subs({n: n - 1})]])
 
 
 def as_pcf_eta(matrix, deflate_all=True):
@@ -85,7 +78,7 @@ def get_folded_pcf_limit(pcf, symbol, factor, limit, deflate_all=True):
   return mobius(foldedpcf.A() * U.subs({n: 1}).inv() * pcf.A().inv(), limit)
 
 
-# Check coboundary
+# check coboundary
 
 
 class CoboundaryError(Exception):
