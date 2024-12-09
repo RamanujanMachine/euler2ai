@@ -18,6 +18,7 @@ def arxiv_dataset_useful_ids(original_list=False):
             '2308.11829', '1907.00205', '2203.09465']
     if original_list:
         return ls
+    # Night of 7-8/12/24:
     # "formula for pi" - arXiv search
     ls.append('2402.08693') # interesting infinite series
     ls.append('1906.00122') # Wallis product
