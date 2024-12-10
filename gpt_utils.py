@@ -48,8 +48,33 @@ def prompt_and_append_messages():
     pass
 
 
-###########
-# Currently being used:
+# Count tokens and estimate cost
+# tiktoken
+
+
+def count_tokens(string):
+    enc = tiktoken.encoding_for_model("gpt-4o")
+    return len(enc.encode(string))
+
+
+def count_tokens_for_messages(messages):
+    enc = tiktoken.encoding_for_model("gpt-4o")
+    return {'system': sum([len(enc.encode(m['content'])) for m in messages if m['role'] == 'system']),
+            'user': sum([len(enc.encode(m['content'])) for m in messages if m['role'] == 'user']),
+            'assistant': sum([len(enc.encode(m['content'])) for m in messages if m['role'] == 'assistant'])}
+
+
+def estimate_cost(messages=[], token_counts={}):
+    SYSTEM_COST = 2.5 / 10**6
+    USER_COST = 2.5 / 10**6
+    ASSISTANT_COST = 10 / 10**6
+
+    if not token_counts:
+        token_counts = count_tokens_for_messages(messages)
+
+    return SYSTEM_COST * token_counts['system'] + USER_COST * token_counts['user'] + ASSISTANT_COST * token_counts['assistant']
+
+
 class GPTIsFormula(BaseModel):
     boolean: bool
     # explanation: str = Field(description="Explanation why the formula can be used to calculate the constant.")
@@ -67,26 +92,6 @@ def classify_formula(latex_string, constant='pi', temperature=0, api_key=OPENAI_
     messages.append(assistant_message(extract_content(response)))
 
     return json.loads(messages[-1]['content'])['boolean']
-###########
-
-
-# Count tokens and estimate cost
-# tiktoken
-
-
-def count_tokens(string):
-    enc = tiktoken.encoding_for_model("gpt-4o")
-    return len(enc.encode(string))
-
-
-def estimate_cost(messages):
-    USER_COST = 2.5 / 10**6
-    SYSTEM_COST = USER_COST
-    ASSISTANT_COST = 10 / 10**6
-
-    return sum([USER_COST * count_tokens(m['content']) if m['role'] == 'user' else \
-                SYSTEM_COST * count_tokens(m['content']) if m['role'] == 'system' else \
-                ASSISTANT_COST * count_tokens(m['content']) for m in messages])
 
 
 # Structured response classes
@@ -94,12 +99,13 @@ def estimate_cost(messages):
 
 class GPTFormulaBool(BaseModel):
     boolean: bool
-    explanation: str = Field(description="Explanation why the formula is either a continued fraction or a series.")
+    explanation: str = Field(description="Explanation why the formula is a continued fraction or a series or an infinite product.")
 
 
 class FormulaType(Enum):
     CONTINUED_FRACTION = 'cf'
     SERIES = 'series'
+    PRODUCT = 'product'
     NEITHER = 'neither'
 
 
@@ -117,7 +123,8 @@ class GPTCF(BaseModel):
     an: str
     bn: str
     unknowns: List[str]
-    explanation: str = Field(description="Explanation why an is the partial denominator, why bn is the partial numerator, and why each unknown is an unknown.")
+    explanation: str = Field(description="Explanation why an is the partial denominator of the continued fraction, why bn is the partial numerator" + \
+                              "and why each unknown is an unknown.")
 
 
 class GPTSeries(BaseModel):
@@ -129,6 +136,15 @@ class GPTSeries(BaseModel):
                             "why start is the starting value for the dummy variable and why each unknown is an unknown.")
   
 
+class GPTProduct(BaseModel):
+    factor: str
+    dummy_var: str
+    start: str
+    unknowns: List[str]
+    explanation: str = Field(description="Explanation why factor is the factor of the infinite product, why dummy_var is the dummy variable iterated over, " + \
+                            "why start is the starting value for the dummy variable and why each unknown is an unknown.")
+
+
 class GPTSympyExpression(BaseModel):
     expression: str
     explanation: str = Field(description="Explanation why the new string is the proper sympy expression for the original string.")
@@ -139,7 +155,7 @@ class GPTBool(BaseModel):
     explanation: str = Field(description="Explanation why the answer is either true or false.")
 
 
-# GPT
+# Extract formula
 
 
 def correct_to_sympy_expression(string, messages=[], max_iters=3, verbose=False, temperature=0, api_key=OPENAI_API_KEY, model="gpt-4o-mini", max_tokens=200):
@@ -166,7 +182,7 @@ def correct_to_sympy_expression(string, messages=[], max_iters=3, verbose=False,
             i += 1
             if verbose:
                 print(f'Error: {e}')
-            messages.append(user_message(f"The last attempt was not proper sympy: {e}. Try again. Extract the expression in this string and write it in proper sympy format: {string}"))
+            messages.append(user_message(f"The last attempt was not proper sympy: {str(e)[:50]}. Try again. Extract the expression in this string and write it in proper sympy format: {string}"))
             response = client.beta.chat.completions.parse(model=model, messages=messages, temperature=temperature, max_tokens=max_tokens, response_format=GPTSympyExpression)
             messages.append(assistant_message(extract_content(response)))
             string = json.loads(messages[-1]['content'])['expression']
@@ -193,7 +209,7 @@ def extract_formula(latex_string, verbose=True, constant='pi', api_key=OPENAI_AP
     messages = [
         system_message(f"You are a model that classifies whether a latex string is a formula that can be rearranged to calculate the constant {constant}. " + \
                         "Specifically, we are interested in three types of formulas: continued fractions and series (infinite sums). Keep all answers concise and accurate."),
-        user_message(f"Is this formula a continued fraction or a series that can be rearranged to calculate the constant {constant}? {latex_string}")
+        user_message(f"Is this formula a continued fraction or a series or a product that can be rearranged to calculate the constant {constant}? {latex_string}")
         ]
 
     # is a formula?
@@ -207,27 +223,27 @@ def extract_formula(latex_string, verbose=True, constant='pi', api_key=OPENAI_AP
             print(f'Not a formula.')
         return {'type': ''}, messages
     
+    if verbose:
+        print(f'Is a formula.')
+        token_counts = count_tokens_for_messages(messages)
+        print('Token counts:', token_counts)
+        print('Cost estimate:', estimate_cost(token_counts=token_counts))
 
     # what type?
-    messages.append(user_message(f"Is this formula a continued fraction or series? {latex_string}"))
+    messages.append(user_message(f"Is this formula a continued fraction, a series or a product? {latex_string}"))
     response = client.beta.chat.completions.parse(model=model, messages=messages, temperature=temperature, max_tokens=max_tokens, response_format=GPTFormulaClassification)
     messages.append(assistant_message(extract_content(response)))
 
     formula_type = json.loads(messages[-1]['content'])['formula_type']
 
-    # expected type
-    expected_formula_type = ''
-    # cf_regular_expressions = '(' + r'\\cfrac\s*{\s*[^{}]*\s*}\s*{\s*[^{}]*?(?:\\cfrac\s*{\s*[^{}]*\s*}\s*{\s*[^{}]*})*\s*}' + '|' + \
-                                    # r'\\frac\s*{\s*[^{}]*\s*}\s*{\s*[^{}]*?(?:\\frac\s*{\s*[^{}]*\s*}\s*{\s*[^{}]*})*\s*}' + ')'
-    # if 'sum' in latex_string:
-    #     expected_formula_type = 'series'
-    # elif re.findall(cf_patterns(), latex_string) or 'cf' in latex_string:
-    #     expected_formula_type = 'cf'
-    # if expected_formula_type:
-    #     assert formula_type == expected_formula_type, f'Expected {expected_formula_type}, got {formula_type}'
+    if verbose:
+        print(f'Formula of type: {formula_type}')
+        token_counts = count_tokens_for_messages(messages)
+        print('Token counts:', token_counts)
+        print('Cost estimate:', estimate_cost(token_counts=token_counts))
 
     # identify the value
-    messages.append(user_message(r"What is the value of this formula? It should be explicit (a closed form) and on one side of the equation. " + \
+    messages.append(user_message(r"What is the value of this formula? It should be explicit and on one side of the equation. " + \
                                     r"Example: the string '$$\forall z \in \mathbb{C}: \quad  1+\frac{1\cdot(2\cdot z-1)}{4+\frac{2\cdot(2\cdot z-3)}" + \
                                     r"{7+\frac{3\cdot(2\cdot z-5)}{10+\frac{4\cdot(2\cdot z-7)}{13+..}}}} = \frac{2^{2\cdot z +1}}{\pi\binom{2\cdot z}{z}}$$' " + \
                                     r"has value: '2**(2*z + 1)/(pi*binomial(2*z, z))'. " + \
@@ -239,17 +255,23 @@ def extract_formula(latex_string, verbose=True, constant='pi', api_key=OPENAI_AP
 
     formula_value = json.loads(messages[-1]['content'])['value']
 
+    if verbose:
+        print(f'Formula value: {formula_value}')
+        token_counts = count_tokens_for_messages(messages)
+        print('Token counts:', token_counts)
+        print('Cost estimate:', estimate_cost(token_counts=token_counts))
+
     # clean the value (iteratively)
-    formula_value, messages, value_is_proper_sympy = correct_to_sympy_expression(formula_value, messages=messages, max_iters=max_iters, verbose=verbose, temperature=temperature, model=model)
+    formula_value, messages, value_is_proper_sympy = correct_to_sympy_expression(formula_value, messages=messages, max_iters=max_iters, verbose=verbose, temperature=temperature, model="gpt-4o", max_tokens=max_tokens)
 
     # identify formula components + unknowns
     if formula_type == 'cf':
         messages.append(user_message(f"Identify the partial denominator an, partial numerator bn, and any unknown variables (other than the depth n) " + \
                                     f"that appear in the the continued fraction. " + \
-                                    "Extract each of them and write them as proper sympy expressions as a function of depth n. " + \
-                                    "Example: the string '$$\forall z \in \mathbb{C}: \quad  1+\frac{1\cdot(2\cdot z-1)}{4+\frac{2\cdot(2\cdot z-3)}" + \
-                                    "{7+\frac{3\cdot(2\cdot z-5)}{10+\frac{4\cdot(2\cdot z-7)}{13+..}}}} = \frac{2^{2\cdot z +1}}{\pi\binom{2\cdot z}{z}}$$' " + \
-                                    "has an: '3*n + 1', bn: 'n*(2*z - (2*n - 1))', unknowns: ['z']" + \
+                                    r"Extract each of them and write them as proper sympy expressions as a function of depth n. " + \
+                                    r"Example: the string '$$\forall z \in \mathbb{C}: \quad  1+\frac{1\cdot(2\cdot z-1)}{4+\frac{2\cdot(2\cdot z-3)}" + \
+                                    r"{7+\frac{3\cdot(2\cdot z-5)}{10+\frac{4\cdot(2\cdot z-7)}{13+..}}}} = \frac{2^{2\cdot z +1}}{\pi\binom{2\cdot z}{z}}$$' " + \
+                                    r"has an: '3*n + 1', bn: 'n*(2*z - (2*n - 1))', unknowns: ['z']" + \
                                     f"The continued fraction: {latex_string}"))
         response = client.beta.chat.completions.parse(model="gpt-4o", messages=messages, temperature=temperature, max_tokens=max_tokens, response_format=GPTCF)
         messages.append(assistant_message(extract_content(response)))
@@ -257,13 +279,28 @@ def extract_formula(latex_string, verbose=True, constant='pi', api_key=OPENAI_AP
     elif formula_type == 'series':
         messages.append(user_message(f"Identify the summand, dummy variable, start value for the dummy variable and any unknown variables (other than the dummy variable) " + \
                                     f"that appear in the series: {latex_string}. Extract each of them and write them as proper sympy expressions. " + \
-                                    "Example: the string '\pi=\frac{22}{7} -24\sum_{n=2}^\infty \frac{(-1)^{n}}{(2n+1)(2n+2)(2n+3)(2n+4)(2n+5)}' " + \
+                                    r"Example: the string '\pi=\frac{22}{7} -24\sum_{n=2}^\infty \frac{(-1)^{n}}{(2n+1)(2n+2)(2n+3)(2n+4)(2n+5)}' " + \
                                     "has summand: '(-1)**n / ((2n + 1)*(2*n + 2)*(2*n + 3)*(2*n + 4)*(2*n + 5))', dummy variable: 'n', start: '2', unknowns: [] " + \
                                     f"The series: {latex_string}"))
         response = client.beta.chat.completions.parse(model="gpt-4o", messages=messages, temperature=temperature, max_tokens=max_tokens, response_format=GPTSeries)
         messages.append(assistant_message(extract_content(response)))
 
+    elif formula_type == 'product':
+        messages.append(user_message(f"Identify the factor, dummy variable, start value for the dummy variable and any unknown variables (other than the dummy variable) " + \
+                                    f"that appear in the infinite product: {latex_string}. Extract each of them and write them as proper sympy expressions. " + \
+                                    r"Example: the string '\prod_{n=1}^\infty \frac{4n^2}{4n^2 - 1} = \frac{\pi}{2}' " + \
+                                    r"has factor: '\frac{4n^2}{4n^2 - 1}', dummy variable: 'n', start: '1', unknowns: [] " + \
+                                    f"The infinite product: {latex_string}"))
+        response = client.beta.chat.completions.parse(model="gpt-4o", messages=messages, temperature=temperature, max_tokens=max_tokens, response_format=GPTProduct)
+        messages.append(assistant_message(extract_content(response)))
+
     formula_info = json.loads(messages[-1]['content'])
+
+    if verbose:
+        print('Extracted formula info')
+        token_counts = count_tokens_for_messages(messages)
+        print('Token counts:', token_counts)
+        print('Cost estimate:', estimate_cost(token_counts=token_counts))
 
     # clean the formula components + unknowns
     info_is_proper_sympy = copy.deepcopy(formula_info)
@@ -274,19 +311,20 @@ def extract_formula(latex_string, verbose=True, constant='pi', api_key=OPENAI_AP
         if key == 'unknowns':
             proper_sympy_val = copy.deepcopy(val)
             for i, string in enumerate(val):
-                string, messages, sympy_boolean = correct_to_sympy_expression(string, messages=messages, max_iters=max_iters, verbose=verbose, temperature=temperature, model=model)
+                string, messages, sympy_boolean = correct_to_sympy_expression(string, messages=messages, max_iters=max_iters, verbose=verbose, temperature=temperature, model=model, max_tokens=max_tokens)
                 val[i] = string
                 proper_sympy_val[i] = sympy_boolean
         else:
-            val, messages, proper_sympy_val = correct_to_sympy_expression(val, messages=messages, max_iters=max_iters, verbose=verbose, temperature=temperature, model=model)
+            val, messages, proper_sympy_val = correct_to_sympy_expression(val, messages=messages, max_iters=max_iters, verbose=verbose, temperature=temperature, model=model, max_tokens=max_tokens)
         
         formula_info[key] = val
         info_is_proper_sympy[key] = proper_sympy_val
 
     if verbose:
-        print(f'{formula_bool}')
-        print(f'{formula_type}')
-        print(f'{formula_value}')
+        print('Cleaned formula info')
+        token_counts = count_tokens_for_messages(messages)
+        print('Token counts:', token_counts)
+        print('Cost estimate:', estimate_cost(token_counts=token_counts))
 
     # join dictionaries
     formula_info['value'] = formula_value
