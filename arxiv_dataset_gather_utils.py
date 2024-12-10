@@ -3,6 +3,10 @@
 # and some simple statistics on the gather.
 
 
+from arxiv_dataset_filter_utils import \
+    equation_patterns, commented_block_patterns, clean_equation, \
+        remove_equation_wrapper, split_equation, prepare_equation_for_parsing
+
 import io
 import tarfile
 import gzip
@@ -16,10 +20,7 @@ from IPython.display import display
 from IPython.core.display import HTML
 from copy import deepcopy
 import json
-
-from arxiv_dataset_filter_utils import \
-    equation_patterns, commented_block_patterns, clean_equation, \
-        remove_equation_wrapper, split_equation, prepare_equation_for_parsing
+import numpy as np
 
 
 # Gathering LaTeX content from arXiv - main function
@@ -448,7 +449,7 @@ def remove_equation_wrappers_gather(gather: Optional[Dict[str, Dict[str, List[Di
 
 
 def sat_filter_gather(sat_strings: List[List[str]], gather: Optional[Dict[str, Dict[str, List[Dict[str, str]]]]] = None,
-                      forbidden_strings=['FORBIDDEN'], keep_size=False, return_func=False) \
+                      forbidden_strings=['FORBIDDEN'], search_in='e', keep_size=False, return_func=False) \
                       -> Union[Callable, Optional[Dict[str, Dict[str, List[Dict[str, str]]]]]]:
     """
     Use a SAT expression to filter for equations. If the SAT expression is satisfied, the equation is kept.
@@ -457,6 +458,7 @@ def sat_filter_gather(sat_strings: List[List[str]], gather: Optional[Dict[str, D
         * sat_strings: list of lists (referred to as tup), all the strings in at least one list must be present in a string
         for it to be admitted to the filtered gather. Regex (re) supported.
         * forbidden_strings: if one of these is present in a string, it is not admitted to the filtered gather.
+        * search_in: key in the equation dictionary to search in. Default is 'e' for equation.
         * keep_size: if True, keeps the size of the gather the same by replacing equations that do not meet
         the SAT criterion by 'SAT_FAIL'.
         * return_func: if True, returns a function that filters a gather.
@@ -468,9 +470,9 @@ def sat_filter_gather(sat_strings: List[List[str]], gather: Optional[Dict[str, D
         raise ValueError('Either gather or return_func must be set.')
 
     def sat_filter_equation_dict(eq_dict): # sat filter equation for dict
-        return eq_dict if any([all([re.findall(s, eq_dict['e']) for s in tup]) for tup in sat_strings]) \
-                and not any([re.findall(s, eq_dict['e']) for s in forbidden_strings]) \
-                else {**eq_dict, 'e': 'SAT_FAIL'} if keep_size else None
+        return eq_dict if any([all([re.findall(s, eq_dict[search_in]) for s in tup]) for tup in sat_strings]) \
+                and not any([re.findall(s, eq_dict[search_in]) for s in forbidden_strings]) \
+                else {**eq_dict, search_in: 'SAT_FAIL'} if keep_size else None
     
     return apply_to_gather(sat_filter_equation_dict, gather=gather, return_func=return_func)
 
@@ -559,12 +561,18 @@ def equations_per_file(gather):
     return [len(eq_list) for file_dict in gather.values() for eq_list in file_dict.values()]
 
 
-def equations_per_file_hist(gather, resolution=100):
+def equations_per_file_hist(gather, bins=100, legend=True, loc='center right'):
     fig, ax = plt.subplots()
-    ax.hist(equations_per_file(gather), bins=range(0, max(equations_per_file(gather)) + 1, resolution))
-    ax.set_xlabel('Number of equations')
-    ax.set_ylabel('Number of files')
-    ax.set_title('Number of equations per file')
+    eqs_per_file = equations_per_file(gather)
+    ax.hist(eqs_per_file, bins=bins)
+    ax.set_xlabel('# Equations')
+    ax.set_ylabel('Frequency')
+    ax.set_title(f'Number of equations per file\nTotals: {len(gather_equations(gather))} equations in {len(gather_files(gather))} files')
+    ax.axvline(np.average(eqs_per_file), color='red', linestyle='dashed', linewidth=1,
+               label=rf'Average equations per id $\pm$ std:' + '\n' + rf'${str(round(np.average(eqs_per_file), 2))} \pm {str(round(np.std(eqs_per_file), 2))}$')
+    ax.axvline(max(eqs_per_file), color='black', linestyle='dashed', linewidth=1, label='Max equations per id: ' + str(max(eqs_per_file)))
+    if legend:
+        ax.legend(loc=loc)
     return fig
 
 
@@ -572,12 +580,18 @@ def equations_per_id(gather):
     return [sum([len(eq_list) for eq_list in file_dict.values()]) for file_dict in gather.values()]
 
 
-def equations_per_id_hist(gather, resolution=100):
+def equations_per_id_hist(gather, bins=100, legend=True, loc='center right'):
     fig, ax = plt.subplots()
-    ax.hist(equations_per_id(gather), bins=range(0, max(equations_per_id(gather)) + 1, resolution))
-    ax.set_xlabel('Number of equations')
-    ax.set_ylabel('Number of papers')
-    ax.set_title('Number of equations per paper')
+    eqs_per_id = equations_per_id(gather)
+    ax.hist(eqs_per_id, bins=bins)
+    ax.set_xlabel('# Equations')
+    ax.set_ylabel('Frequency')
+    ax.set_title(f'Number of equations per paper\nTotals: {len(gather_equations(gather))} equations in {len(gather)} papers')
+    ax.axvline(np.average(eqs_per_id), color='red', linestyle='dashed', linewidth=1,
+               label=rf'Average equations per id $\pm$ std:' + '\n' + rf'${str(round(np.average(eqs_per_id), 2))} \pm {str(round(np.std(eqs_per_id), 2))}$')
+    ax.axvline(max(eqs_per_id), color='black', linestyle='dashed', linewidth=1, label='Max equations per id: ' + str(max(eqs_per_id)))
+    if legend:
+        ax.legend(loc=loc)
     return fig
 
 
