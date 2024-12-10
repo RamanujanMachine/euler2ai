@@ -1,4 +1,4 @@
-from gpt_utils import classify_formula
+from gpt_utils import classify_formula, openai_api_key
 import json
 
 
@@ -12,7 +12,7 @@ PRINT_EVERY = 200
 
 print('Running...')
 
-OPENAI_API_KEY = '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'
+OPENAI_API_KEY = openai_api_key()
 
 with open(r"C:\Users\totos\Desktop/arXiv_equations_merged_nonempty_gathers/nonempty_gather.json", 'r') as f:
     gather = json.load(f)

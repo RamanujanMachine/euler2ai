@@ -26,15 +26,26 @@ def openai_api_key():
 
 
 OPENAI_API_KEY = openai_api_key()
-client = openai.OpenAI(api_key=OPENAI_API_KEY)
-
-
-class NotViableFormulaError(Exception):
-    pass
 
 
 def extract_content(gpt_response):
     return json.loads(gpt_response.model_dump_json())['choices'][0]['message']['content']
+
+
+def system_message(message):
+    return {"role": "system", "content": message}
+
+
+def user_message(message):
+    return {"role": "user", "content": message}
+
+
+def assistant_message(message):
+    return {"role": "assistant", "content": message}
+
+
+def prompt_and_append_messages():
+    pass
 
 
 ###########
@@ -128,22 +139,6 @@ class GPTBool(BaseModel):
     explanation: str = Field(description="Explanation why the answer is either true or false.")
 
 
-def system_message(message):
-    return {"role": "system", "content": message}
-
-
-def user_message(message):
-    return {"role": "user", "content": message}
-
-
-def assistant_message(message):
-    return {"role": "assistant", "content": message}
-
-
-def prompt_and_append_messages():
-    pass
-
-
 # GPT
 
 
@@ -197,7 +192,7 @@ def extract_formula(latex_string, verbose=True, constant='pi', api_key=OPENAI_AP
 
     messages = [
         system_message(f"You are a model that classifies whether a latex string is a formula that can be rearranged to calculate the constant {constant}. " + \
-                        "Specifically, we are interested in two types of formulas: continued fractions and series (infinite sums). Keep all answers concise and accurate."),
+                        "Specifically, we are interested in three types of formulas: continued fractions and series (infinite sums). Keep all answers concise and accurate."),
         user_message(f"Is this formula a continued fraction or a series that can be rearranged to calculate the constant {constant}? {latex_string}")
         ]
 
