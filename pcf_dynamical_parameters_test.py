@@ -9,7 +9,7 @@ from sympy import symbols
 n = symbols('n')
 
 
-def test_limit_class_shift():
+def test_limit_class_shift(): # an artifact of how the limit class is defined
     pcf = PCF(2*n + 1, n**2)
     depth = 2
     limits = pcf.limit(list(range(PCFDynamics.CIDS(), depth + PCFDynamics.CIDS())))
@@ -27,6 +27,17 @@ def test_q_red_growth_rate():
     pcf = PCF(2*n + 1, n**2)
     dyn = PCFDynamics(pcf)
     assert dyn.q_red_growth_rate(1000) == approx(np.array([ 0.01168079,  0.88409888, -0.74880569]), rel=1e-5)
+
+
+def test_eigenvalue_quotient():
+    pcf = PCF(2*n + 1, n**2)
+    dyn = PCFDynamics(pcf)
+    assert dyn.eigenvalue_quotient(1000, log=False) == approx(5.83254938, rel=1e-5)
+    assert dyn.eigenvalue_quotient(1000, log=True) == approx(1.76345419, rel=1e-5)
+    pcf2 = PCF(48*n**3 + 36*n**2 - 2*n - 2, n**2*(-64*n**4 + 96*n**3 + 12*n**2 - 52*n + 15)) # folded by 2
+    dyn2 = PCFDynamics(pcf2)
+    assert dyn2.eigenvalue_quotient(1000) == approx(3.52867673, rel=1e-5)
+    assert dyn2.eigenvalue_quotient(1000) / dyn.eigenvalue_quotient(1000) == approx(2, rel=1e-2)
 
 
 def test_delta():

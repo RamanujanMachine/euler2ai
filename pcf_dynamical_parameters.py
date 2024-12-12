@@ -10,12 +10,17 @@ from typing import Tuple, Collection, List
 import matplotlib.pyplot as plt
 
 
+n = sp.symbols('n') # for substitution into PCF
+
+
 class PCFDynamics():
     """
     Class for calculating the (Blind-delta) dynamical parameters of a PCF.
     The zeroth value in returns of convergent-related methods (`errors`, `q_reds`, `delta`)
     corresponds to the first convergent (A matrix * first recursion matrix substitution),
     and so on.
+
+    PCF uses sympy symbol n.
 
     NOTE: this class counts depth = 1 <-> pcf.A() * M1,
     and this is the first convergent supported by the class.
@@ -99,7 +104,22 @@ class PCFDynamics():
                 if verbose:
                     print(f'No factorial reduction, sticking with full model.')
                 return tuple(params)
-        
+    
+
+    def eigenvalue_quotient(self, depth: int, log=True, verbose=False) -> float:
+        r"""
+        This parameter is useful for finding the relative convergence rate of the pcf.
+        Note: assumes PCF symbol is sympy n.
+        """
+        self.check_positive(depth)
+        lambda1, lambda2 = sorted([abs(val.evalf()) for val in list(self.pcf.subs({n: depth}).M().eigenvals())], reverse=True)
+        if verbose:
+            print(f'Eigenvalue absolute values at depth {depth}: {lambda1}, {lambda2}')
+        if log:
+            return mm.mp.log(lambda1 / lambda2)
+        else:
+            return lambda1 / lambda2
+
     
     def delta(self, depth: int, limit=None) -> float:
         self.check_positive(depth)
