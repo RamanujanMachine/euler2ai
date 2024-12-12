@@ -208,7 +208,8 @@ def extract_formula(latex_string, verbose=True, constant='pi', api_key=OPENAI_AP
 
     messages = [
         system_message(f"You are a model that classifies whether a latex string is a formula that can be rearranged to calculate the constant {constant}. " + \
-                        "Specifically, we are interested in three types of formulas: continued fractions and series (infinite sums). Keep all answers concise and accurate."),
+                        "Specifically, we are interested in three types of formulas: continued fractions, series (infinite sums) and infinite products." + \
+                        "Keep all answers concise and accurate."),
         user_message(f"Is this formula a continued fraction or a series or a product that can be rearranged to calculate the constant {constant}? {latex_string}")
         ]
 
