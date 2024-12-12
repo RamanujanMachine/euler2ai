@@ -85,6 +85,11 @@ def test_fold_matrix():
     assert fold_matrix(matrix, 3, symbol=n) == folded
 
 
+# TODO
+def test_fold_pcf():
+    pass
+
+
 def test_get_folded_pcf_limit():
     pcf = PCF(2*n + 1, n**2)
     pcf_limit = 4 / sp.pi
@@ -92,7 +97,7 @@ def test_get_folded_pcf_limit():
                      - 1263*n**2 + 40*n + 32,
                      n**2*(164025*n**8 - 546750*n**7 + 448335*n**6 + 262440*n**5 \
                            - 498069*n**4 + 134298*n**3 + 75897*n**2 - 44196*n + 6004))
-    assert get_folded_pcf_limit(pcf, n, 3, pcf_limit).evalf() == approx(folded_pcf.limit(1000).as_float(), rel=1e-10)
+    assert get_folded_pcf_limit(pcf, 3, pcf_limit).evalf() == approx(folded_pcf.limit(1000).as_float(), rel=1e-10)
 
 
 def test_check_are_identical_upto_nonzero_scale():

@@ -68,7 +68,14 @@ def as_pcf_polys(matrix, deflate_all=True):
     return matrix[1, 0].subs({n: n - 1}), as_pcf_eta(matrix, deflate_all=deflate_all)
 
 
-def get_folded_pcf_limit(pcf, symbol, factor, limit, deflate_all=True):
+# TODO: write a test for this
+def fold_pcf(pcf, factor, symbol=n):
+    foldedmat = fold_matrix(pcf.M(), factor, symbol=symbol)
+    foldedpcf = as_pcf(foldedmat)
+    return foldedpcf
+
+
+def get_folded_pcf_limit(pcf, factor, limit, symbol = n, deflate_all=True):
   """
     folded * U(n+1) = U(n) * foldedpcf
   """
