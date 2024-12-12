@@ -4,29 +4,29 @@
 
 # TODO: do we want to define a new class MatrixTransforms?
 # it will 1. keep track of all transforms applied 
-# keep track of the recurrence limit (for 2x2 as defined by Mobius)
-# 2.
+# 2. keep track of the recurrence limit (for 2x2 as defined by Mobius)
+# NOTE: pcfs should be dealt with like regular matrices (no A matrix)
 
 
-from computational_utils import fold_matrix, as_pcf_cob, as_pcf_polys
+from computational_utils import fold_matrix, as_pcf_cob, as_pcf_polys, mobius
 from ramanujantools import Matrix
 import sympy as sp
 from sympy import symbols
-from typing import Any, Union
-from multimethod import multimethod
-from functools import partial
+from typing import Any
+
 
 n = symbols('n')
 
 
-def strip_repr(s):
+def clean_repr(s: str):
     if 'CobTransform' in s and s != 'CobTransform':
-        return s.strip('CobTransform')
+        return s.replace('CobTransform', '')
+    if 'Transform' in s and s != 'RecursionTransform':
+        return s.replace('Transform', '')
     return s
 
 
-# TODO: maybe
-class MatrixTransformArray():
+class RecursionTransform():
     r"""
     A generic class for keeping track of matrix transformations.
     """
@@ -34,20 +34,66 @@ class MatrixTransformArray():
         self.transforms = transforms
         self.symbol = symbol
 
+    def __repr__(self):
+        rep = ' , '.join([clean_repr(t.__repr__()) for t in self.transforms])
+        return f'{clean_repr(self.__class__.__name__)}(transforms : {rep})'
+    
     def __call__(self, matrix: Matrix) -> Matrix:
         # call each transformation on the matrix
         for t in self.transforms:
-            matrix = t(matrix, symbol=self.symbol)
+            matrix = t(matrix).applyfunc(sp.simplify)
         return matrix
+    
+    def reduce_transforms(self):
+        return RecursionTransform([t.reduce_transforms() for t in self.transforms], symbol=self.symbol)
 
     @staticmethod
     def static_compose(t1, t2):
         assert t1.symbol == t2.symbol, f"Cannot compose transforms with different symbols: {t1.symbol} != {t2.symbol}"
-        return MatrixTransformArray([*t1, *t2], symbol=t1.symbol)
+        return RecursionTransform([*t1, *t2], symbol=t1.symbol)
 
     def compose(self, other):
-        return MatrixTransformArray.static_compose(self, other)
+        return RecursionTransform.static_compose(self, other)
+    
+    def transform_limit(self, limit):
+        r"""Apply the transformation to the limit (of a recurrence)."""
+        for t in self.transforms:
+            limit = t.transform_limit(limit)
+        return limit
         
+
+class FoldToPCFTransform(RecursionTransform):
+    r"""
+    Defines a fold transformation for pcfs.
+    """
+    def __init__(self, matrix, factor: int, symbol: sp.Symbol = n):
+        self.matix = matrix
+        self.factor = factor
+        fold = FoldTransform(factor, symbol=symbol)
+        folded = fold(matrix)
+        aspcf = CobTransformAsPCF(folded, symbol=symbol)
+        super().__init__([fold, aspcf], symbol=symbol)
+
+
+# MobiusTransform is irrelevant
+class MobiusTransform():
+    r"""
+    Defines a fold transformation for matrices
+    """
+
+    def __init__(self, mobius: Matrix, symbol: sp.Symbol = n):
+        self.mobius = mobius
+        self.symbol = symbol
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}(mobius : {self.mobius})'
+
+    def __call__(self, matrix: Matrix) -> Matrix:
+        return self.mobius * matrix
+    
+    def inv(self):
+        return MobiusTransform(self.mobius.inv(), symbol=self.symbol)
+
 
 class FoldTransform():
     r"""
@@ -58,8 +104,14 @@ class FoldTransform():
         self.factor = factor
         self.symbol = symbol
 
+    def __repr__(self):
+        return f'{clean_repr(self.__class__.__name__)}(factor : {self.factor})'
+
     def __call__(self, matrix: Matrix) -> Matrix:
-        return fold_matrix(matrix, self.symbol, self.factor)
+        return fold_matrix(matrix, self.factor, self.symbol)
+    
+    def transform_limit(self, limit):
+        return limit
 
 
 class CobTransform():
@@ -68,7 +120,7 @@ class CobTransform():
 
     M -> multiplier * U^{-1}_{n} * M * U_{n+1} = new M
     """
-    def __init__(self, U: Matrix, multiplier: Matrix, transforms=[], symbol: sp.Symbol = n):
+    def __init__(self, U: Matrix, multiplier: Any, transforms=[], symbol: sp.Symbol = n):
         self.U = U
         self.multiplier = multiplier
         self.symbol = symbol
@@ -79,15 +131,23 @@ class CobTransform():
 
     def __repr__(self):
         if len(self.transforms) == 1:
-            return f'{strip_repr(self.__class__.__name__)}(U : {self.U}, multiplier : {self.multiplier})'
-        rep = ' , '.join([strip_repr(t.__repr__()) for t in self.transforms])
+            return f'{clean_repr(self.__class__.__name__)}(U : {self.U}, multiplier : {self.multiplier})'
+        rep = ' , '.join([clean_repr(t.__repr__()) for t in self.transforms])
         return f'{self.__class__.__name__}(U : {self.U}, multiplier : {self.multiplier}, transforms : [{rep}])'
 
     def __call__(self, matrix) -> Matrix:
-        return self.multiplier * self.U.inv() * matrix * self.U.subs({self.symbol: self.symbol + sp.Integer(1)})
+        return (self.multiplier * (
+            self.U.inv() * matrix * self.U.subs({self.symbol: self.symbol + sp.Integer(1)})
+            ).applyfunc(sp.simplify)).applyfunc(sp.simplify)
+    
+    def params(self):
+        return self.U, self.multiplier, self.transforms, self.symbol
     
     def reduce_transforms(self):
         return CobTransform(self.U, self.multiplier, symbol=self.symbol)
+    
+    def inv(self):
+        return CobTransform(self.U.inv(), 1 / self.multiplier, [t.inv() for t in self.transforms[::-1]], symbol=self.symbol)
     
     @staticmethod
     def static_compose(t1: 'CobTransform', t2: 'CobTransform') -> 'CobTransform':
@@ -136,16 +196,22 @@ class CobTransform():
         Compose self with a list of coboundary transformations.
         """
         return CobTransform.static_compose(self, CobTransform.static_compose_list(t_list))
+    
+    def transform_limit(self, limit):
+        return mobius(self.U.inv().subs({self.symbol: 1}), limit)
 
 
 class CobTransformMultiply(CobTransform):
     r"""
-    Multiplies by the given scalar or matrix.
+    Multiplies by the given scalar.
     """
-    def __init__(self, multiplier: Any):
-        self.func_multiplier = multiplier # not necessarily a matrix
-        super().__init__(Matrix.eye(2), self.func_multiplier * Matrix.eye(2))
+    def __init__(self, multiplier: Any, symbol: sp.Symbol = n):
+        self.multiplier = multiplier # NOT a matrix
+        super().__init__(Matrix.eye(2), self.multiplier, symbol=symbol)
 
+    def inv(self):
+        return CobTransformMultiply(1 / self.multiplier, symbol=self.symbol)
+    
 
 class CobTransformInflate(CobTransform):
     r"""
@@ -155,7 +221,11 @@ class CobTransformInflate(CobTransform):
         if deflate:
             inflater = 1 / inflater
         self.inflater = inflater
-        super().__init__(Matrix([[ 1 / self.inflater.subs({symbol: symbol - sp.Integer(1)}), 0], [0, 1]]), self.inflater * Matrix.eye(2), symbol=symbol)
+        self
+        super().__init__(Matrix([[ 1 / self.inflater.subs({symbol: symbol - sp.Integer(1)}), 0], [0, 1]]), self.inflater, symbol=symbol)
+
+    def inv(self):
+        return CobTransformInflate(1 / self.inflater, symbol=self.symbol)
 
 
 # Matrix dependent coboundary transformations
@@ -171,7 +241,10 @@ class CobTransformShift(CobTransform):
         mat = Matrix.eye(2)
         for i in range(self.shift):
             mat *= matrix.subs({symbol: symbol + sp.Integer(i)})
-        super().__init__(mat, Matrix.eye(2), symbol=symbol)
+        super().__init__(mat, sp.Integer(1), symbol=symbol)
+
+    def inv(self):
+        return CobTransformShift(self.matrix, - self.shift, symbol=self.symbol)
 
 
 class CobTransformAsPCF(CobTransform):
@@ -182,5 +255,8 @@ class CobTransformAsPCF(CobTransform):
     def __init__(self, matrix: Matrix, deflate_all=True, symbol: sp.Symbol = n):
         self.matrix = matrix
         polys = as_pcf_polys(matrix, deflate_all=deflate_all)
-        super().__init__(as_pcf_cob(matrix, deflate_all=deflate_all), polys[0] / polys[1] * Matrix.eye(2), symbol=symbol)
+        super().__init__(as_pcf_cob(matrix, deflate_all=deflate_all), polys[0] / polys[1], symbol=symbol)
+
+    def inv(self):
+        return CobTransform(self.U.inv(), 1 / self.multiplier, symbol=self.symbol)
     
