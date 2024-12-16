@@ -501,7 +501,7 @@ def prepare_for_parsing_gather(gather: Optional[Dict[str, Dict[str, List[Dict[st
     return apply_to_gather(prepare_for_parsing_dict, gather=gather, return_func=return_func)
 
 
-# Buildind a filtration pipeline for gathers
+# Building a filtration pipeline for gathers
 
 
 def build_pipeline_for_gather(clean=True, remove_wrappers=True, sat_filter=[],
@@ -538,12 +538,52 @@ def build_pipeline_for_gather(clean=True, remove_wrappers=True, sat_filter=[],
             gather = sat_filter_func(gather)
         if split_at_ampersands:
             gather = split_at_ampersands_func(gather)
-        if clean:
+        if prepare_for_parsing:
             gather = prepare_for_parsing_func(gather)
 
         return gather
     
     return process_gather
+
+
+
+# Displaying gathers
+
+
+def gather_to_df(gather: Dict[str, Dict[str, List[Dict[str, str]]]], columns=[]) -> pd.DataFrame:
+    """
+    Args:
+        * gather: dictionary (key is paper id) of dictionaries (key is file name)
+        of lists of dictionaries (equations and their line numbers)
+        * columns: additional keys to extract from equation dictionaries
+        to the dataframe in addition to the default
+    Returns:
+        pandas DataFrame, default columns: 'paper_id', 'file_name', 'line_number', 'source', 'equation'
+        where 'source' is 'body' if the equation is in the body of the latex
+        and 'comment' if it is in a latex comment
+    """
+    data = []
+    for paper_id, file_dict in gather.items():
+        for file_name, eq_list in file_dict.items():
+            for eq_dict in eq_list:
+                data.append([paper_id, file_name, eq_dict['l'],
+                             'body' if eq_dict['t'] in ['b', 'body'] else 'comment',
+                             eq_dict['e'],
+                             *[eq_dict[c] for c in columns]])
+    df = pd.DataFrame(data, columns=['paper_id', 'file_name', 'line_number', 'source', 'equation', *columns])
+    return df.sort_values(['paper_id', 'file_name', 'line_number']).reset_index(drop=True)
+
+
+def gather_latex_df(arxiv_ids, queries=[], all_latex=False, remove_version=False, verbose=False, sleep=1, sleep_burst=10):
+
+    gather, fails = gather_latex(arxiv_ids, queries=queries, all_latex=all_latex, remove_version=remove_version,
+                                      verbose=verbose, sleep=sleep, sleep_burst=sleep_burst)
+    df = gather_to_df(gather)
+    return df, fails
+
+
+def display_df(df: pd.DataFrame, max_rows: int = 10, from_ind=0, to_ind=-1, **kwargs):
+    display(HTML(df.iloc[from_ind:to_ind].to_html(max_rows=max_rows, **kwargs)))
 
 
 # Interpreting gathers
@@ -597,35 +637,3 @@ def equations_per_id_hist(gather, bins=100, legend=True, loc='center right'):
 
 def average_equations_per_file(gather):
     return len(gather_equations(gather)) / len(gather_files(gather))
-
-
-def gather_to_df(gather: Dict[str, Dict[str, List[Dict[str, str]]]]) -> pd.DataFrame:
-    """
-    Args:
-        * gather: dictionary (key is paper id) of dictionaries (key is file name)
-        of lists of dictionaries (equations and their line numbers)
-        * keep_indices: if True, keeps the original indices of the equations
-    Returns:
-        pandas DataFrame with columns: 'paper_id', 'file_name', 'line_number', 'source', 'equation'
-        where 'source' is 'body' if the equation is in the body of the latex
-        and 'comment' if it is in a latex comment
-    """
-    data = []
-    for paper_id, file_dict in gather.items():
-        for file_name, eq_list in file_dict.items():
-            for eq_dict in eq_list:
-                data.append([paper_id, file_name, eq_dict['l'], 'body' if eq_dict['t'] == 'b' else 'comment', eq_dict['e']])
-    df = pd.DataFrame(data, columns=['paper_id', 'file_name', 'line_number', 'source', 'equation'])
-    return df.sort_values(['paper_id', 'file_name', 'line_number']).reset_index(drop=True)
-
-
-def gather_latex_df(arxiv_ids, queries=[], all_latex=False, remove_version=False, verbose=False, sleep=1, sleep_burst=10):
-
-    gather, fails = gather_latex(arxiv_ids, queries=queries, all_latex=all_latex, remove_version=remove_version,
-                                      verbose=verbose, sleep=sleep, sleep_burst=sleep_burst)
-    df = gather_to_df(gather)
-    return df, fails
-
-
-def display_df(df: pd.DataFrame, max_rows: int = 10, from_ind=0, to_ind=-1, **kwargs):
-    display(HTML(df.iloc[from_ind:to_ind].to_html(max_rows=max_rows, **kwargs)))
