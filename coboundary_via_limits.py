@@ -1,4 +1,5 @@
 from computational_utils import *
+from coboundary_utils import *
 from coboundary_via_limits_utils import *
 from ramanujantools import Matrix
 import sympy as sp
@@ -318,7 +319,7 @@ class CobViaLim():
             raise ValueError('You need to run `extract_U` first')
         if self.check_coboundary():
             prod1, prod2 = check_coboundary(self.recursion_matrix1, self.recursion_matrix2, self.U,
-                                            symbol=n, verbose=False, return_prod=True)
+                                            symbol=n, return_prod=True, verbose=False)
             exist_nonzero = False
             for (i, j) in product(range(2), repeat=2):
                 num_ij = prod2[i, j]; den_ij = prod1[i, j]
@@ -334,7 +335,7 @@ class CobViaLim():
             raise CoboundaryError('Coboundary condition failed.')
 
     def extract_coboundary_triple(self, fit_up_to=None, fit_from=0, divide_by_ij=(0,0),
-                                  verbose=False, auto_resolve_denominator=True):
+                                  auto_resolve_denominator=True, verbose=False):
         if not hasattr(self, 'empirical_coboundaries'):
             raise ValueError('You need to run `solve_U` first')
 
