@@ -8,7 +8,7 @@
 from coboundary_via_limits import CobViaLim, NoSolutionError
 from recurrence_transforms import FoldToPCFTransform, CobTransform
 from pcf_dynamical_parameters import PCFDynamics
-from computational_utils import mobius
+from recurrence_transforms_utils import mobius
 from ramanujantools.pcf import PCF
 import sympy as sp
 from typing import Tuple
