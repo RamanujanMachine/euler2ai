@@ -6,7 +6,7 @@
 
 
 from coboundary_via_limits import CobViaLim, NoSolutionError
-from recursion_transforms import FoldToPCFTransform, CobTransform
+from recurrence_transforms import FoldToPCFTransform, CobTransform
 from pcf_dynamical_parameters import PCFDynamics
 from computational_utils import mobius
 from ramanujantools.pcf import PCF
