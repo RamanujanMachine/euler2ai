@@ -1,5 +1,5 @@
-# This file will contain the CobTransform class, which is a generic class for keeping track of coboundary transformations and operations
-# From this parent class we will derive others
+# This file will contain the CobTransform class, which is a generic class for keeping track of coboundary 
+# transformations and operations. From this parent class we will derive others
 
 
 # TODO: do we want to define a new class MatrixTransforms?
@@ -7,12 +7,16 @@
 # 2. keep track of the recurrence limit (for 2x2 as defined by Mobius)
 # NOTE: pcfs should be dealt with like regular matrices (no A matrix)
 
+# 18.12.24 NOTE: maybe a shift should be applied automatically to
+# the first index proceeding the last zero of the resulting recurrence's
+# matrix. Or at least an option should be added to do so.
 
-from computational_utils import fold_matrix, as_pcf_cob, as_pcf_polys, mobius
+
+from recurrence_transforms_utils import fold_matrix, as_pcf_cob, as_pcf_polys, mobius
 from ramanujantools import Matrix
 import sympy as sp
 from sympy import symbols
-from typing import Any
+from typing import Any, Union
 
 
 n = symbols('n')
@@ -21,12 +25,12 @@ n = symbols('n')
 def clean_repr(s: str):
     if 'CobTransform' in s and s != 'CobTransform':
         return s.replace('CobTransform', '')
-    if 'Transform' in s and s != 'RecursionTransform':
+    if 'Transform' in s and s != 'RecurrenceTransform':
         return s.replace('Transform', '')
     return s
 
 
-class RecursionTransform():
+class RecurrenceTransform():
     r"""
     A generic class for keeping track of matrix transformations.
     """
@@ -45,15 +49,15 @@ class RecursionTransform():
         return matrix
     
     def reduce_transforms(self):
-        return RecursionTransform([t.reduce_transforms() for t in self.transforms], symbol=self.symbol)
+        return RecurrenceTransform([t.reduce_transforms() for t in self.transforms], symbol=self.symbol)
 
     @staticmethod
     def static_compose(t1, t2):
         assert t1.symbol == t2.symbol, f"Cannot compose transforms with different symbols: {t1.symbol} != {t2.symbol}"
-        return RecursionTransform([*t1, *t2], symbol=t1.symbol)
+        return RecurrenceTransform([*t1.transforms, *t2.transforms], symbol=t1.symbol)
 
     def compose(self, other):
-        return RecursionTransform.static_compose(self, other)
+        return RecurrenceTransform.static_compose(self, other)
     
     def transform_limit(self, limit):
         r"""Apply the transformation to the limit (of a recurrence)."""
@@ -62,7 +66,7 @@ class RecursionTransform():
         return limit
         
 
-class FoldToPCFTransform(RecursionTransform):
+class FoldToPCFTransform(RecurrenceTransform):
     r"""
     Defines a fold transformation for pcfs.
     """
@@ -221,21 +225,21 @@ class CobTransformInflate(CobTransform):
         if deflate:
             inflater = 1 / inflater
         self.inflater = inflater
-        self
-        super().__init__(Matrix([[ 1 / self.inflater.subs({symbol: symbol - sp.Integer(1)}), 0], [0, 1]]), self.inflater, symbol=symbol)
+        super().__init__(Matrix([[ 1 / self.inflater.subs({symbol: symbol - sp.Integer(1)}), 0], [0, 1]]),
+                         self.inflater, symbol=symbol)
 
     def inv(self):
         return CobTransformInflate(1 / self.inflater, symbol=self.symbol)
 
 
-# Matrix dependent coboundary transformations
+# Recurrence-matrix dependent coboundary transformations
 
 
 class CobTransformShift(CobTransform):
     r"""
     Coboundary transformation for index shifts.
     """
-    def __init__(self, matrix: Matrix, shift: int, symbol: sp.Symbol = n):
+    def __init__(self, matrix: Matrix, shift: Union[int, sp.Integer], symbol: sp.Symbol = n):
         self.matrix = matrix
         self.shift = shift
         mat = Matrix.eye(2)
