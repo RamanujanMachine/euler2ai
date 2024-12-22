@@ -4,6 +4,13 @@ from LIReC.lib.pslq_utils import PolyPSLQRelation, get_exponents, reduce
 from operator import add, mul
 from sympy import Symbol, sympify
 from typing import Iterable
+import pandas as pd
+from IPython.display import display
+from IPython.core.display import HTML
+
+
+def display_df(df: pd.DataFrame, max_rows: int = 10, from_ind=0, to_ind=-1, **kwargs):
+    display(HTML(df.iloc[from_ind:to_ind].to_html(max_rows=max_rows, **kwargs)))
 
 
 def lid(strings, constants=['pi'], as_sympy=False):

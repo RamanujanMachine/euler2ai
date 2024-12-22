@@ -16,8 +16,6 @@ import time
 from typing import Dict, List, Tuple, Callable, Optional, Union
 import matplotlib.pyplot as plt
 import pandas as pd
-from IPython.display import display
-from IPython.core.display import HTML
 from copy import deepcopy
 import json
 import numpy as np
@@ -581,9 +579,6 @@ def gather_latex_df(arxiv_ids, queries=[], all_latex=False, remove_version=False
     df = gather_to_df(gather)
     return df, fails
 
-
-def display_df(df: pd.DataFrame, max_rows: int = 10, from_ind=0, to_ind=-1, **kwargs):
-    display(HTML(df.iloc[from_ind:to_ind].to_html(max_rows=max_rows, **kwargs)))
 
 
 # Interpreting gathers
