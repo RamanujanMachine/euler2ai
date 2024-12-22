@@ -9,7 +9,12 @@ from IPython.display import display
 from IPython.core.display import HTML
 
 
-def display_df(df: pd.DataFrame, max_rows: int = 10, from_ind=0, to_ind=-1, **kwargs):
+def display_df(df: pd.DataFrame, max_rows: int = 10, from_ind=0, to_ind=None, **kwargs):
+    if to_ind is None:
+        if len(df) == 1:
+            to_ind = 1
+        else:
+            to_ind = -1
     display(HTML(df.iloc[from_ind:to_ind].to_html(max_rows=max_rows, **kwargs)))
 
 
