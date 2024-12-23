@@ -299,7 +299,7 @@ class CobViaLim():
         for ind, u1_to_4 in enumerate(product(*hypotheses)):
             lcm = sp.lcm([u[1] for u in u1_to_4]) # of denominators
             u1_to_4 = [sp.simplify(u[0] * lcm / u[1]) for u in u1_to_4]
-            U_hypothesis = (sp.Matrix([[u1_to_4[0], u1_to_4[1]], [u1_to_4[2], u1_to_4[3]]])).applyfunc(sp.expand)
+            U_hypothesis = (Matrix([[u1_to_4[0], u1_to_4[1]], [u1_to_4[2], u1_to_4[3]]])).applyfunc(sp.expand)
             if verbose:
                 print(f'Coboundary matrix hypothesis {ind + 1}:')
                 display(U_hypothesis)
