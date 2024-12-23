@@ -3,7 +3,6 @@ from LIReC.db.access import db
 from LIReC.lib.pslq_utils import PolyPSLQRelation, get_exponents, reduce
 from operator import add, mul
 from sympy import Symbol, sympify
-from typing import Iterable
 import pandas as pd
 from IPython.display import display
 from IPython.core.display import HTML
@@ -21,8 +20,17 @@ def display_df(df: pd.DataFrame, max_rows: int = 10, from_ind=0, to_ind=None, **
 def lid(strings, constants=['pi'], as_sympy=False):
     r"""
     Identify relation to pi using LIReC.
+    
+    Args:
+        - strings: str, float, mpf or list of these
+        - as_sympy: whether to return sympified results
+
+    Returns: identification
+        - list of objects if multiple or no identifications found
+        - otherwise a single object
+        (object is sympy if as_sympy otherwise a string)
     """
-    if isinstance(strings, Iterable):
+    if isinstance(strings, list):
         results = db.identify([*[str(string) for string in strings], *constants])
     else:
         results = db.identify([str(strings), *constants])
@@ -49,17 +57,22 @@ def lirec_identify_result_to_sympy(polypslq):
     monoms = [reduce(mul, (c.symbol**exp[i] for i,c in enumerate(polypslq.constants)), polypslq.coeffs[j]) for j, exp in enumerate(exponents)]
     expr = sympify(reduce(add, monoms, 0))
     res = None
-    # else:
+    if polypslq.isolate not in expr.free_symbols or not expr.is_Add: # checking is_Add just in case...
+        # res = f'{expr} = 0 ({self.precision})'
+        res = None
+    else:
         # expect expr to be Add of Muls or Pows, so args will give the terms
         # so now the relation is (-num) + (denom) * isolate = 0, or isolate = num/denom!
-    num = reduce(add, [-t for t in expr.args if polypslq.isolate not in t.free_symbols], 0)
-    denom = reduce(add, [t/polypslq.isolate for t in expr.args if polypslq.isolate in t.free_symbols], 0)
+        res = True
+        num = reduce(add, [-t for t in expr.args if polypslq.isolate not in t.free_symbols], 0)
+        denom = reduce(add, [t/polypslq.isolate for t in expr.args if polypslq.isolate in t.free_symbols], 0)
+        res = sympify((num / denom).expand())
         # this will not be perfect if isolate appears with an exponent! will also be weird if either num or denom is 0
     #     res = (fr'\frac{{{num}}}{{{denom}}}' if polypslq.latex_mode else f'{num/denom}') + f' ({polypslq.precision})' 
     #     res = (f'{polypslq.isolate} = ' if polypslq.include_isolated else '') + res
     # # finally perform latex_mode substitution for exponents if necessary
     # return re.subn('\*\*(\w+)', '**{\\1}', res)[0] if polypslq.latex_mode else res
-    return sympify((num / denom).expand())
+    return res
 
 
 def write_dicts_to_latex_table(dict_list, output_file, headers=None, sort=None):
