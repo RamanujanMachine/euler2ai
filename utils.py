@@ -8,12 +8,29 @@ from IPython.display import display
 from IPython.core.display import HTML
 
 
+def remove_keys_from_dict(d, keys):
+    r"""
+    Remove a key from a dictionary.
+    
+    Args:
+        - d: dictionary
+        - key: key to remove
+    
+    Returns:
+        - dictionary with the key removed
+    """
+    d = d.copy()
+    if isinstance(keys, str):
+        keys = [keys]
+    for key in keys:
+        if key in d:
+            del d[key]
+    return d
+
+
 def display_df(df: pd.DataFrame, max_rows: int = 10, from_ind=0, to_ind=None, **kwargs):
     if to_ind is None:
-        if len(df) == 1:
-            to_ind = 1
-        else:
-            to_ind = -1
+        to_ind = len(df)
     display(HTML(df.iloc[from_ind:to_ind].to_html(max_rows=max_rows, **kwargs)))
 
 
@@ -38,12 +55,12 @@ def lid(strings, constants=['pi'], as_sympy=False):
         results = [lirec_identify_result_to_sympy(res) for res in results]
     else:
         results = [res.__str__() for res in results]
-    return results[0] if len(results) == 1 else results
+    return results[0] if len(results) == 1 else None if results == [] else results
 
 
 def lirec_identify_result_to_sympy(polypslq):
     r"""
-    Taken from `LIReC.lib.pslq_utils.PolyPSLQRelation`.
+    Taken from `LIReC.lib.pslq_utils.PolyPSLQRelation.__str__`.
     """
     exponents = get_exponents(polypslq.degree, polypslq.order, len(polypslq.constants))
     for i,c in enumerate(polypslq.constants): # verify symbols
