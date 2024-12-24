@@ -3,7 +3,7 @@
 #   * Mathematica output directory with recurrences
 # Output: dataframe with recurrences and metadata (recurrences merged with the original dataframe)
 
-from arxiv_dataset_gpt_utils import convert_to_sympy
+from arxiv_dataset_gpt_utils import convert_from_mathematica_to_sympy
 import sympy as sp
 import pickle
 import json
@@ -79,9 +79,9 @@ if __name__ == "__main__":
             df.at[ind, 'pcf_mathematica'] = {'a': recurrence['a'], 'b': recurrence['b'], 'inflator': recurrence['inflator']}
             
             pcf = {}
-            pcf['a'] = 'NOT_A_CF' if (recurrence['a'] == "NOT_A_CF") else convert_to_sympy(recurrence['a'])[0]
-            pcf['b'] = 'NOT_A_CF' if (recurrence['b'] == "NOT_A_CF") else convert_to_sympy(recurrence['b'])[0]
-            pcf['inflator'] = 'NOT_A_CF' if (recurrence['inflator'] == "NOT_A_CF") else convert_to_sympy(recurrence['inflator'])[0]
+            pcf['a'] = 'NOT_A_CF' if (recurrence['a'] == "NOT_A_CF") else convert_from_mathematica_to_sympy(recurrence['a'])[0]
+            pcf['b'] = 'NOT_A_CF' if (recurrence['b'] == "NOT_A_CF") else convert_from_mathematica_to_sympy(recurrence['b'])[0]
+            pcf['inflator'] = 'NOT_A_CF' if (recurrence['inflator'] == "NOT_A_CF") else convert_from_mathematica_to_sympy(recurrence['inflator'])[0]
             df.at[ind, 'pcf_sympy'] = pcf
             df.at[ind, 'first20formula_convergents'] = first20formula_convergents_str_to_rational(recurrence['first20formula_convergents']) # note the .at for assigning a list to a single cell
         
