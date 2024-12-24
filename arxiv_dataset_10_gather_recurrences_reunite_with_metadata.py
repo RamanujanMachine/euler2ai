@@ -82,7 +82,7 @@ if __name__ == "__main__":
             pcf['a'] = 'NOT_A_CF' if (recurrence['a'] == "NOT_A_CF") else convert_to_sympy(recurrence['a'])[0]
             pcf['b'] = 'NOT_A_CF' if (recurrence['b'] == "NOT_A_CF") else convert_to_sympy(recurrence['b'])[0]
             pcf['inflator'] = 'NOT_A_CF' if (recurrence['inflator'] == "NOT_A_CF") else convert_to_sympy(recurrence['inflator'])[0]
-            df.at[ind, 'pcf'] = pcf
+            df.at[ind, 'pcf_sympy'] = pcf
             df.at[ind, 'first20formula_convergents'] = first20formula_convergents_str_to_rational(recurrence['first20formula_convergents']) # note the .at for assigning a list to a single cell
         
         except FileNotFoundError:
