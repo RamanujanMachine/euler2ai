@@ -2,8 +2,7 @@ from ramanujantools import Matrix
 from ramanujantools.pcf import PCF
 from ramanujantools.pcf.pcf import content
 import sympy as sp
-from itertools import product
-from IPython.display import display
+
 
 n = sp.symbols('n')
 
@@ -112,7 +111,6 @@ def get_zeros(pcf: PCF):
     zerosbnum = [z for z in sp.solve(pcf.b_n.as_numer_denom()[0], n) if isinstance(z, sp.Integer) or isinstance(z, int)]
     zerosbden = [z for z in sp.solve(pcf.b_n.as_numer_denom()[1], n) if isinstance(z, sp.Integer) or isinstance(z, int)]
     zerosaden = [z for z in sp.solve(pcf.a_n.as_numer_denom()[1], n) if isinstance(z, sp.Integer) or isinstance(z, int)]
-
     return {'b_num': zerosbnum, 'b_den': zerosbden, 'a_den': zerosaden}
 
 
@@ -132,3 +130,15 @@ def shift_to_viable(pcf: PCF):
     """
     shift = get_shift(pcf)
     return pcf.subs({n: n + shift}), shift
+
+
+# TODO: write a test
+# normalize pcf
+def normalize_pcf(pcf: PCF, verbose=False):
+    newpcf, inflator = inflate_to_polynomial(pcf)
+    newpcf, shift = shift_to_viable(pcf)
+    if newpcf != pcf:
+        if verbose:
+            print('Inflated by', inflator)
+            print('Shifted by', shift)
+    return newpcf, inflator, shift
