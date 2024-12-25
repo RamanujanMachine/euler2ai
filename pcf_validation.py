@@ -1,14 +1,14 @@
 # will contain code from sum_to_recursion.ipynb
+# eventually added from arxiv_dataset12, arxiv_dataset12 files
 
 from utils import lid
+from arxiv_dataset_gpt_utils import identify_value
 from ramanujantools import Matrix, Limit
 from ramanujantools.pcf.pcf import PCF
-from LIReC.db.access import db
-import sympy as sp
 from typing import Union
 
-from sympy import symbols
-n = symbols('n')
+import sympy as sp
+n = sp.symbols('n')
 
 
 # use this to validate the pcf actually does compute the series/product,
@@ -51,13 +51,111 @@ def pcf_compute_to(pcf, depth, start_depth=0, start_matrix: Union[str, Matrix] =
     return Limit(*[start_matrix * limit[1], start_matrix * limit[0]])
 
 
-def iterative_lid(emp_limit, string_lengths = [8, 10, 20, 30, 40, 50], as_sympy=True, constants=['pi'], verbose=False):
+def iterative_lid(emp_limit, string_lengths = [8, 10, 20, 30, 40, 50], constants=['pi'], as_sympy=True, verbose=False):
+    r"""
+    Args:
+        emp_limit: empirical limit (should be a number / string representation of a number)
+        string_lengths: list of lengths to try
+        as_sympy: whether to return identification as a sympy object
+        constants: constants to consider (LIReC syntax)
+        verbose: print sympy limit
+    """
     sympy_limit = lid(str(emp_limit)[:string_lengths[0]], constants=constants, as_sympy=as_sympy)
     for i, length in enumerate(string_lengths):
         if sympy_limit is None:
-            sympy_limit = lid(str(emp_limit)[:length], as_sympy=True)
+            sympy_limit = lid(str(emp_limit)[:length], constants=constants, as_sympy=as_sympy)
         else:
             break
     if verbose and sympy_limit is not None:
         print(f'identified limit: {sympy_limit}')
+    return sympy_limit
+
+
+def identify_pcf_limit(pcf, extracted_lim=None, equation_string='', constants=['pi'], digits_for_extracted_float=100, verbose=False):
+    r"""
+    Attempts to find the limit of the pcf using LIReC's pslq and by using GPT to re-extract the limit from `equation_string`.
+
+    Args:
+        pcf: PCF object
+        extracted_lim: extracted limit
+        equation_string: latex equation string
+        constants: constants to consider (LIReC syntax)
+        digits_for_extracted_float: number of digits to consider for extracted limit
+        verbose: print progress
+
+    Returns:
+        sympy_limit: sympy object representing the limit if found, else None
+    """
+
+    # 1. pslq with pi
+    if verbose:
+        print('1. identifying with pslq')
+    depths = [2000, 4000, 6000, 10000]
+    last_depth = 0
+    convergent = None # will be a Limit object
+    for depth_ind, depth in enumerate(depths):
+        if verbose:
+            print('identifying at depth', depth)
+        convergent = pcf_compute_to(pcf, depth, last_depth, 'A' if convergent is None else convergent.current)
+        sympy_limit = iterative_lid(convergent.as_float(), constants=constants, as_sympy=True) # , verbose=True)
+        if sympy_limit is not None:
+            break
+        last_depth = depth
+
+    if sympy_limit is None and extracted_lim is not None:
+    # evaluate extracted limit
+        extracted_limit_computes = False
+        try:
+            extracted_float = float(extracted_lim.evalf())
+            extracted_limit_computes = True
+        except Exception as e:
+            if verbose:
+                print('error evaluating extracted limit', e)
+            pass
+    # 2. identify with the extracted limit
+        if verbose:
+            print('2. identifying with the extracted limit')
+        rel = 5e-2
+        if sympy_limit is None and extracted_limit_computes:
+            emp_float = convergent.as_float()
+            diff = abs(extracted_float - emp_float)
+            if diff <= rel: # and diff / extracted_float < rel and diff / emp_float < rel:
+                sympy_limit = extracted_lim
+        
+    # 3. identify with the extracted limit and pslq
+        if sympy_limit is None and extracted_limit_computes:
+            if verbose:
+                print('3. identifying with the extracted limit and pslq')
+            tempconst = sp.Symbol('c1')
+            sympy_limit = iterative_lid(emp_float, constants=[str(extracted_float)[:digits_for_extracted_float]], as_sympy=True)
+            if sympy_limit is not None:
+                sympy_limit = sympy_limit.subs({tempconst: extracted_lim})
+
+    
+    if sympy_limit is None and equation_string != '':
+    # 4. try to recollect from latex (then repeat 2 and 3)
+        if verbose:
+            print('4. recollecting limit from latex')
+        value = identify_value(equation_string)[0]
+        if verbose:
+            print('4.1. identified value from latex', value)
+        extracted_limit_computes = False
+        try:
+            value = sp.sympify(value)
+            extracted_float = float(value.evalf())
+            extracted_limit_computes = True
+        except Exception as e:
+            if verbose:
+                print('error evaluating extracted value', e)
+            pass
+        if extracted_limit_computes:
+            if verbose:
+                print('4.2 identifying with the newly extracted value and pslq')
+            tempconst = sp.Symbol('c1')
+            sympy_limit = iterative_lid(emp_float, constants=[str(extracted_float)[:digits_for_extracted_float]], as_sympy=True)
+            if verbose:
+                print(f"{sympy_limit} = iterative_lid({emp_float}, constants=[{str(extracted_float)[:digits_for_extracted_float]}])")
+            if sympy_limit is not None:
+                sympy_limit = sympy_limit.subs({tempconst: extracted_lim})
+
     return sympy_limit
