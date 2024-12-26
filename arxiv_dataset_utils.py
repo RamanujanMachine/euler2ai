@@ -6,10 +6,20 @@ from IPython.display import display
 
 
 def id_to_path(id, arxiv_ids_of_interest, prefix, dir_size=100):
+    R"""
+    arXiv id to initial path (from step 1)
+    """
     index = arxiv_ids_of_interest.index(id)
     start = index - index % dir_size
     end = start + dir_size - 1
     return f'{prefix}\\{start}-{end}__{arxiv_ids_of_interest[start]}__to__{arxiv_ids_of_interest[end]}/{index}__{arxiv_ids_of_interest[index]}.json'
+
+
+def normalize_file_name(string):
+    r"""
+    Replace slashes with `_slash_`.
+    """
+    return string.replace(r"\\", '_slash_').replace(r"/", '_slash_')
 
 
 def build_formula(formula_type, info):
@@ -31,7 +41,7 @@ def build_formula(formula_type, info):
     return formula
 
 
-def extracted2df(gather):
+def extracted2df(gather, additional_keys=[]):
     r"""
     Converts a gather of GPT-extracted equations into a pandas DataFrame.
     """
@@ -42,6 +52,7 @@ def extracted2df(gather):
                     v['formula_dict']['type'],
                     v['formula_dict']['info'],
                     v['formula_dict']['is_proper_sympy'],
+                    *[v[add_key] for add_key in additional_keys]
                     ]
         eq_list.append(data_list)
     return pd.DataFrame(eq_list, columns=['paper_id', 'file_name', 'line_number', 'source', 'equation', 'type', 'info', 'is_proper_sympy']).sort_values(by='paper_id')
