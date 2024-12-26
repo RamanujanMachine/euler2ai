@@ -1,11 +1,9 @@
 from ramanujantools import Limit
 from ramanujantools.pcf import PCF
-
 import sympy as sp
 import numpy as np
 import mpmath as mm
 import scipy as sc
-
 from typing import Tuple, Collection, List
 import matplotlib.pyplot as plt
 
@@ -33,42 +31,63 @@ class PCFDynamics():
     Hence both substitutions into limit for convergents and into delta for delta must be shifted
     by 2. We denote CIDS (CONVERGENT_INDEX_DEFINIION_SHIFT) = 2.
     """
-
-
     def __init__(self, pcf: PCF):
         self.pcf = pcf
 
-    
     @staticmethod
     def CIDS():
         return 2 # CONVERGENT_INDEX_DEFINIION_SHIFT between pcf.limit and our implementation
-    
 
     def check_positive(self, depth):
         if depth < 1:
             raise ValueError('Depth must be positive.')
 
-
-    def convergence_rate(self, depth: int, limit=None, fit_NOA=False, maxfev=10000) -> Tuple[float, float, float]:
+    def compute_all(self, depth: int, limit=None, verbose=False, display_digits=5):
         r"""
-        Calculates the parameters of the convergence rate of the pcf by fitting up to depth:
-        $log(error(n)) = A \cdot nlog(n) + B \cdot n + C \cdot log(n)$
+        Computes all the dynamical parameters of the pcf up to depth.
         Args:
-            depth: The depth to fit up to. See `depths_for_fit` for the depths used.
+            depth: The depth to compute the parameters up to.
             limit: The limit to use in calculations (optional, not recommended since its precision is not updated).
-            fit_NOA: Whether to fit the model without the A parameter (if A is close to 0). If True, A is set to 0.
+            verbose: Whether to print the results.
+            display_digits: The number of digits to display in the results.
         Returns:
-            A, B, C
+            A, B, C, A_q, B_q, C_q, eigenvalue_ratio, delta
+        """
+        A, B, C = self.convergence_rate(depth, limit=limit)
+        A_q, B_q, C_q = self.q_reduced_growth_rate(depth)
+        eigenvalue_ratio = self.eigenvalue_ratio(depth)
+        delta = self.delta(depth, limit=limit)
+
+        if verbose:
+            print(f'Convergence rate: {A:.{display_digits}f} + {B:.{display_digits}f} + {C:.{display_digits}f}')
+            print(f'Reduced denominator growth rate: {A_q:.{display_digits}f} + {B_q:.{display_digits}f} + {C_q:.{display_digits}f}')
+            print(f'Eigenvalue quotient: {str(eigenvalue_ratio)[:display_digits+2]}')
+            print(f'Delta: {str(delta)[:display_digits+2]}')
+        
+        return {'convergence': [A, B, C], 'q_reduced': [A_q, B_q, C_q], 'eigenvalue_ratio': eigenvalue_ratio, 'delta': delta}
+
+    def delta(self, depth: int, limit=None) -> float:
+        self.check_positive(depth)
+        return self.pcf.delta(depth + self.CIDS(), limit=limit)
+    # CIDS is because delta used Limit.previous instead of Limit.current
+    # so depth=1 corresponds to 2nd convergent of `Limit` class, i.e. pcf.A() * M1
+    # meaning depth=1 in our terms
+
+    def eigenvalue_ratio(self, depth: int, log=True, verbose=False) -> float:
+        r"""
+        This parameter is useful for finding the relative convergence rate of the pcf.
+        Note: assumes PCF symbol is sympy n.
         """
         self.check_positive(depth)
-        fit_depths = self.depths_for_fit(depth)
-        if fit_NOA:
-            return sc.optimize.curve_fit(self.paramfit_NOA, fit_depths, self.errors(fit_depths, limit=limit, log=True), maxfev=maxfev)[0]
+        lambda1, lambda2 = sorted([abs(val.evalf()) for val in list(self.pcf.subs({n: depth}).M().eigenvals())], reverse=True)
+        if verbose:
+            print(f'Eigenvalue absolute values at depth {depth}: {lambda1}, {lambda2}')
+        if log:
+            return mm.mp.log(lambda1 / lambda2)
         else:
-            return sc.optimize.curve_fit(self.paramfit, fit_depths, self.errors(fit_depths, limit=limit, log=True), maxfev=maxfev)[0]
-
-
-    def q_red_growth_rate(self, depth: int, fit_NOA=False, maxfev=10000,
+            return lambda1 / lambda2
+        
+    def q_reduced_growth_rate(self, depth: int, fit_NOA=False, maxfev=10000,
                           as_in_blind_delta=False, verbose=False) -> Tuple[float, float, float]:
         r"""
         Calculates the parameters of the reduced denominator growth rate of the pcf by fitting up to depth:
@@ -104,45 +123,36 @@ class PCFDynamics():
                 if verbose:
                     print(f'No factorial reduction, sticking with full model.')
                 return tuple(params)
-    
 
-    def eigenvalue_quotient(self, depth: int, log=True, verbose=False) -> float:
+    def convergence_rate(self, depth: int, limit=None, fit_NOA=False, maxfev=10000) -> Tuple[float, float, float]:
         r"""
-        This parameter is useful for finding the relative convergence rate of the pcf.
-        Note: assumes PCF symbol is sympy n.
+        Calculates the parameters of the convergence rate of the pcf by fitting up to depth:
+        $log(error(n)) = A \cdot nlog(n) + B \cdot n + C \cdot log(n)$
+        Args:
+            depth: The depth to fit up to. See `depths_for_fit` for the depths used.
+            limit: The limit to use in calculations (optional, not recommended since its precision is not updated).
+            fit_NOA: Whether to fit the model without the A parameter (if A is close to 0). If True, A is set to 0.
+        Returns:
+            A, B, C
         """
         self.check_positive(depth)
-        lambda1, lambda2 = sorted([abs(val.evalf()) for val in list(self.pcf.subs({n: depth}).M().eigenvals())], reverse=True)
-        if verbose:
-            print(f'Eigenvalue absolute values at depth {depth}: {lambda1}, {lambda2}')
-        if log:
-            return mm.mp.log(lambda1 / lambda2)
+        fit_depths = self.depths_for_fit(depth)
+        if fit_NOA:
+            return sc.optimize.curve_fit(self.paramfit_NOA, fit_depths, self.errors(fit_depths, limit=limit, log=True), maxfev=maxfev)[0]
         else:
-            return lambda1 / lambda2
-
+            return sc.optimize.curve_fit(self.paramfit, fit_depths, self.errors(fit_depths, limit=limit, log=True), maxfev=maxfev)[0]
     
-    def delta(self, depth: int, limit=None) -> float:
-        self.check_positive(depth)
-        return self.pcf.delta(depth + self.CIDS(), limit=limit)
-    # CIDS is because delta used Limit.previous instead of Limit.current
-    # so depth=1 corresponds to 2nd convergent of `Limit` class, i.e. pcf.A() * M1
-    # meaning depth=1 in our terms
-
-
     @staticmethod
     def depths_for_fit(depth):
         return sorted(list(set([6, depth // 8, depth // 4, depth // 2, depth])))
-
 
     @staticmethod
     def paramfit(x, A, B, C):
         return A*x*np.log(x) + B*x + C*np.log(x)
 
-
     @staticmethod
     def paramfit_NOA(x, B, C):
         return B*x + C*np.log(x)
-
 
     def errors(self, depths: List[int], limit=None, log=False) -> Collection[float]:
         """
@@ -168,13 +178,11 @@ class PCFDynamics():
         else:
             return [abs(mm.mp.mpf(limit - limits[depth_to_ind[depth]].as_float())) for depth in depths]
 
-    
     @ staticmethod
     def q_red(limit: Limit):
         p, q = limit.as_rational()
         gcd = sp.gcd(p, q)
         return q / gcd
-
 
     def q_reds(self, depths: List[int], log=False) -> Collection[float]:
         """
@@ -193,29 +201,30 @@ class PCFDynamics():
             return [self.q_red(limits[depth_to_ind[depth]]) for depth in depths]
 
 
-    def plot_errors(self, depth, limit=None, fit=True, display_digits=5):
-        fig = plt.plot(np.arange(1, depth + 1), self.errors(list(range(1, depth + 1)), limit=limit, log=True), label=r'Data')
+# TODO: fix plot displays (slicing the strings of ther numbers results in wrong display)
+
+
+    def plot_errors(self, depth, limit=None, plot_every=50, fit=True, display_digits=5):
+        fig = plt.plot(np.arange(1, depth + 1, plot_every), self.errors(list(range(1, depth + 1, plot_every)), limit=limit, log=True), label=r'Data')
         plt.title(r'$\log(\epsilon)$')
         plt.xlabel('Depth (n)')
         if fit:
             A, B, C = self.convergence_rate(depth, limit=limit)
             label = rf'${str(A)[:display_digits]} \cdot nlog(n) + {str(B)[:display_digits]} \cdot n + {str(C)[:display_digits]} \cdot log(n)$'
-            plt.plot(np.arange(1, depth + 1), self.paramfit(np.arange(1, depth + 1), A, B, C), label=label)
+            plt.plot(np.arange(1, depth + 1, plot_every), self.paramfit(np.arange(1, depth + 1, plot_every), A, B, C), label=label)
             plt.legend()
         return fig
-
 
     def plot_q_reds(self, depth, fit=True, display_digits=5):
         fig = plt.plot(np.arange(1, depth + 1), self.q_reds(list(range(1, depth + 1)), log=True), label=r'Data')
         plt.title(r'$\log(q_{red})$')
         plt.xlabel('Depth (n)')
         if fit:
-            A, B, C = self.q_red_growth_rate(depth)
+            A, B, C = self.q_reduced_growth_rate(depth)
             label = rf'${str(A)[:display_digits]} \cdot nlog(n) + {str(B)[:display_digits]} \cdot n + {str(C)[:display_digits]} \cdot log(n)$'
             plt.plot(np.arange(1, depth + 1), self.paramfit(np.arange(1, depth + 1), A, B, C), label=label)
             plt.legend()
         return fig
-    
 
     def plot_deltas(self, depth, limit=None):
         fig = plt.plot(np.arange(1, depth + 1), self.pcf.delta_sequence(depth + 2, limit=limit)[2:], label=r'$\delta$')
