@@ -1,9 +1,12 @@
 # miscellaneous utility functions.
+from ramanujantools.pcf import PCF
 from LIReC.db.access import db
 from LIReC.lib.pslq_utils import PolyPSLQRelation, get_exponents, reduce
 from operator import add, mul
-from sympy import Symbol, sympify
+from sympy import Symbol, sympify, Add, Mul
 import pandas as pd
+import re
+from typing import Collection, Optional, Union
 from IPython.display import display
 from IPython.core.display import HTML
 
@@ -34,7 +37,7 @@ def display_df(df: pd.DataFrame, max_rows: int = 10, from_ind=0, to_ind=None, **
     display(HTML(df.iloc[from_ind:to_ind].to_html(max_rows=max_rows, **kwargs)))
 
 
-def lid(strings, constants=['pi'], as_sympy=False):
+def lid(strings, constants=['pi'], as_sympy=False) -> Collection[Optional[Union[Add, Mul, Symbol]]]:
     r"""
     Identify relation to pi using LIReC.
     
@@ -135,4 +138,79 @@ def write_dicts_to_latex_table(dict_list, output_file, headers=None, sort=None):
         f.write(r'\caption{Your Table Caption Here}' + '\n')
         f.write(r'\end{table}' + '\n')
         f.write(r'\end{document}' + '\n')
+
+
+# as latex (PCFs)
+
+def python_to_latex(python_str):
+    # Convert '**' to '^'
+    latex_str = re.sub(r'\*\*(\d+)', r'^{\1}', python_str) # python_str.replace('**', '^')
+    
+    # Convert '*' to '\cdot' (for multiplication)
+    latex_str = latex_str.replace('*', '') # r'\cdot '
+    
+    # Convert '/' to '\frac{}{}' (for division)
+    # Use regular expressions to find the division operation
+    def convert_division(match):
+        numerator = match.group(1)
+        denominator = match.group(2)
+        return r'\frac{' + numerator + '}{' + denominator + '}'
+    latex_str = re.sub(r'(\w+)\s*/\s*(\w+)', convert_division, latex_str)
+    return latex_str
+
+
+def generic_recursive_fraction(level, depth):
+    if level == depth:
+        return r'\ddots + \cfrac{b_n}{a_n + \ddots}'
+    else:
+        a_i = f'a_{level}'
+        b_i = f'b_{level + 1}'
+        return rf'{a_i} + \cfrac{{{b_i}}}{{{generic_recursive_fraction(level + 1, depth)}}}'
+
+
+def recursive_fraction(level, depth, a_n, b_n):
+    n = Symbol('n')
+    if level == depth:
+        return rf'\ddots + \cfrac{{{b_n}}}{{{a_n} + \ddots}}'
+    else:
+        a_val = a_n.subs(n, level)
+        b_val = b_n.subs(n, level + 1)
+        return rf'{a_val} + \cfrac{{{b_val}}}{{{recursive_fraction(level + 1, depth, a_n, b_n)}}}'
+
+
+def pcf_as_latex(pcf: PCF, depth: int = 3, start: int = 1) -> str:
+        """
+        Returns the continued fraction as a string in LaTeX format.
+        Note: result should be printed to obtain actual LaTex string format.
+
+        Args:
+            depth: The index to display up to.
+            start: The index from which to display.
+        Returns:
+            The LaTeX string for the continued fraction (python representation, i.e. '\' is '\\').
+        """
+        n = Symbol('n')
+        if start != 1:
+            result = rf'\cfrac{{{pcf.b_n.subs(n, start)}}}{{{recursive_fraction(start, depth, pcf.a_n, pcf.b_n)}}}'
+        else:
+            result = rf'{pcf.a_n.subs(n, 0)} + \cfrac{{{pcf.b_n.subs(n, 1)}}}{{{recursive_fraction(start, depth, pcf.a_n, pcf.b_n)}}}'
+        return python_to_latex(result)
+
+
+def generic_pcf_as_latex(depth: int = 3, start: int = 1) -> str:
+        """
+        Returns a generic continued fraction as a string in LaTeX format,
+        with symbols $a_n$ and $b_n$ as the partial denominators and numerators, respectively.
+        Args:
+            depth: The index to display up to.
+            start: The index from which to display.
+        Returns:
+            The LaTeX string for the continued fraction (python representation, i.e. '\' is '\\').
+            e.g. 'a_0 + \\cfrac{b_1}{a_1 + \\cfrac{b_2}{a_2 + \\cfrac{b_3}{\\ddots + \\cfrac{b_n}{a_n + \\ddots}}}}'.
+        """
+        if start != 1:
+            result = rf'\cfrac{{b_{start}}}{{{generic_recursive_fraction(start, depth)}}}'
+        else:
+            result = rf'a_0 + \cfrac{{b_1}}{{{generic_recursive_fraction(start, depth)}}}'
+        return python_to_latex(result)
         
