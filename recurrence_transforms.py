@@ -12,8 +12,9 @@
 # matrix. Or at least an option should be added to do so.
 
 
-from recurrence_transforms_utils import fold_matrix, as_pcf_cob, as_pcf_polys, mobius
+from recurrence_transforms_utils import fold_matrix, as_pcf_cob, as_pcf_polys, mobius, get_shift
 from ramanujantools import Matrix
+from ramanujantools.pcf import PCF
 import sympy as sp
 from sympy import symbols
 from typing import Any, Union
@@ -45,7 +46,7 @@ class RecurrenceTransform():
     def __call__(self, matrix: Matrix) -> Matrix:
         # call each transformation on the matrix
         for t in self.transforms:
-            matrix = t(matrix).applyfunc(sp.simplify)
+            matrix = t(matrix).applyfunc(sp.simplify) # TODO: can we do without sp.simplify?
         return matrix
     
     def reduce_transforms(self):
@@ -68,15 +69,28 @@ class RecurrenceTransform():
 
 class FoldToPCFTransform(RecurrenceTransform):
     r"""
-    Defines a fold transformation for pcfs.
+    Defines a fold transformation from a matrix to a PCF.
+
+    Args:
+        matrix: the matrix to transform
+        factor: the factor by which to fold
+        shift_if_necessary: whether to apply a shift if necessary
+        to make the PCF well-defined
+        symbol: the symbol to
     """
-    def __init__(self, matrix, factor: int, symbol: sp.Symbol = n):
-        self.matix = matrix
+    def __init__(self, matrix, factor: int, shift_if_necessary=True, symbol: sp.Symbol = n):
+        self.matrix = matrix
         self.factor = factor
-        fold = FoldTransform(factor, symbol=symbol)
-        folded = fold(matrix)
+        fold = FoldTransform(self.factor, symbol=symbol)
+        folded = fold(self.matrix)
         aspcf = CobTransformAsPCF(folded, symbol=symbol)
-        super().__init__([fold, aspcf], symbol=symbol)
+        transforms = [fold, aspcf]
+        if shift_if_necessary:
+            as_pcf_mat = RecurrenceTransform(transforms, symbol=symbol)(matrix)
+            pcf = PCF(*list(as_pcf_mat[:, 1])[::-1])
+            shift = get_shift(pcf)
+            transforms.append(CobTransformShift(as_pcf_mat, shift, symbol=symbol))
+        super().__init__(transforms, symbol=symbol)
 
 
 # MobiusTransform is irrelevant
@@ -125,7 +139,7 @@ class CobTransform():
     M -> multiplier * U^{-1}_{n} * M * U_{n+1} = new M
     """
     def __init__(self, U: Matrix, multiplier: Any, transforms=[], symbol: sp.Symbol = n):
-        self.U = U
+        self.U = U.applyfunc(lambda x: sp.expand(sp.factor(x)))
         self.multiplier = multiplier
         self.symbol = symbol
         if not transforms:
@@ -225,7 +239,7 @@ class CobTransformInflate(CobTransform):
         if deflate:
             inflater = 1 / inflater
         self.inflater = inflater
-        super().__init__(Matrix([[ 1 / self.inflater.subs({symbol: symbol - sp.Integer(1)}), 0], [0, 1]]),
+        super().__init__(Matrix([[ 1 / self.inflater.subs({symbol: symbol - sp.Integer(1)}), 0], [0, 1]]), 
                          self.inflater, symbol=symbol)
 
     def inv(self):
@@ -246,6 +260,9 @@ class CobTransformShift(CobTransform):
         for i in range(self.shift):
             mat *= matrix.subs({symbol: symbol + sp.Integer(i)})
         super().__init__(mat, sp.Integer(1), symbol=symbol)
+
+    def __repr__(self):
+        return f'{clean_repr(self.__class__.__name__)}(matrix : {self.matrix}, shift : {self.shift})'
 
     def inv(self):
         return CobTransformShift(self.matrix, - self.shift, symbol=self.symbol)
