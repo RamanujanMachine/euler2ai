@@ -3,7 +3,7 @@ from ramanujantools.pcf import PCF
 from LIReC.db.access import db
 from LIReC.lib.pslq_utils import PolyPSLQRelation, get_exponents, reduce
 from operator import add, mul
-from sympy import Symbol, sympify, Add, Mul
+from sympy import Symbol, sympify, Add, Mul, Rational
 import pandas as pd
 import re
 from typing import Collection, Optional, Union
@@ -29,6 +29,60 @@ def remove_keys_from_dict(d, keys):
         if key in d:
             del d[key]
     return d
+
+
+def float_to_string(f, n=4, return_float=False):
+    result = str(round(f, n)).rstrip('0').rstrip('.')
+    return float(result) if return_float else result
+
+
+def check_lists_are_integer_multiples(list1, list2, order_matters=False, return_scale=False, verbose=False):
+    r"""
+    If order_matters is True, then list1[i] / list2[i] must be an integer for all i.
+    If order_matters is False, then list1[i] / list2[i] or list2[i] / list1[i] must be an integer for all i.
+
+    Args:
+        list1: list of integers
+        list2: list of integers
+        order_matters: whether the order of the lists matters
+        return_scale: whether to return the factor by which the lists are multiples of each other
+
+    Returns:
+        result: whether the lists are integer multiples of each other
+        or if return_factor is True, returns
+        factor: the factor by which the lists are multiples of each other,
+        None if the lists are not integer multiples of each other
+    """
+    if len(list1) != len(list2):
+        raise ValueError("The lists must have the same length.")
+    if all([num == 0 for num in list1]) and all([num == 0 for num in list2]):
+        return 1 if return_scale else True
+    
+    for num1, num2 in zip(list1, list2):
+        if num1 == 0 and num2 == 0:
+            continue
+        if num1 == 0 or num2 == 0:
+            return None if return_scale else False
+        scale = Rational(num1, num2)
+        break
+    if scale % 1 != 0:
+        if not order_matters:
+            return check_lists_are_integer_multiples(list2, list1, order_matters=True, return_scale=return_scale, verbose=verbose)
+        else:
+            return None if return_scale else False
+    
+    result = True
+    for num1, num2 in zip(list1, list2):
+        num2 = num2 * scale
+        if verbose:
+            print(num1, num2)
+        if num1 != num2:
+            result = False
+            break
+
+    if return_scale:
+        return scale if result else None
+    return result
 
 
 def display_df(df: pd.DataFrame, max_rows: int = 10, from_ind=0, to_ind=None, **kwargs):
