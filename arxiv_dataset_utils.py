@@ -19,7 +19,7 @@ def normalize_file_name(string):
     r"""
     Replace slashes with `_slash_`.
     """
-    return string.replace(r"\\", '_slash_').replace(r"/", '_slash_')
+    return string.replace("\\", '_slash_').replace(r"/", '_slash_')
 
 
 def build_formula(formula_type, info):
