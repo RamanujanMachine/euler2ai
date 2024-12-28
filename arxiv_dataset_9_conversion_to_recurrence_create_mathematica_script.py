@@ -32,7 +32,7 @@ with open(f"{OUTPUT_DIR}/{SCRIPT_FILE}", 'w') as f:
         save_file = os.path.join(
             OUTPUT_DIR,
             f"{FILE_PREFIX}__{i}__{normalize_file_name(row['paper_id'])}__{normalize_file_name(row['file_name'])}__{row['line_number']}.json"
-            ) # .replace('\\', '/')
+            ).replace('\\', '/') # this last replace is important for the Mathematica script
         
         formula_type = row['type']
         if formula_type == 'cf':
