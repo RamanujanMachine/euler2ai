@@ -20,7 +20,7 @@ def test_limit_class_shift(): # an artifact of how the limit class is defined
 def test_convergence_rate():
     pcf = PCF(2*n + 1, n**2)
     dyn = PCFDynamics(pcf)
-    assert dyn.convergence_rate(1000) == approx(np.array([-0.00195182, -0.75124204, -0.14077712]), rel=1e-5)
+    assert dyn.convergence_rate(1000) == approx(np.array([-0.00111069, -0.75543301, -0.44745102]), rel=1e-5)
 
 
 def test_q_reduced_growth_rate():

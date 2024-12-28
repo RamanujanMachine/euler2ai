@@ -4,7 +4,7 @@ import sympy as sp
 import numpy as np
 import mpmath as mm
 import scipy as sc
-from typing import Tuple, Collection, List
+from typing import Tuple, Collection, List, Union
 import matplotlib.pyplot as plt
 
 
@@ -61,14 +61,30 @@ class PCFDynamics():
         if verbose:
             print(f'Convergence rate: {A:.{display_digits}f} + {B:.{display_digits}f} + {C:.{display_digits}f}')
             print(f'Reduced denominator growth rate: {A_q:.{display_digits}f} + {B_q:.{display_digits}f} + {C_q:.{display_digits}f}')
-            print(f'Eigenvalue quotient: {str(eigenvalue_ratio)[:display_digits+2]}')
+            print(f'Eigenvalue ratio: {str(eigenvalue_ratio)[:display_digits+2]}')
             print(f'Delta: {str(delta)[:display_digits+2]}')
         
         return {'convergence': [A, B, C], 'q_reduced': [A_q, B_q, C_q], 'eigenvalue_ratio': eigenvalue_ratio, 'delta': delta}
 
-    def delta(self, depth: int, limit=None) -> float:
+    def delta(self, depth: int, limit=None, shift_step=5, max_shift=10) -> float:
+        r"""
+        Calculates the delta of the pcf at the given depth.
+        Depth 1 corresponds to the 1st convergent (A matrix * first recursion matrix substitution).
+        Args:
+            depth: The depth to calculate the delta at.
+            limit: The limit to use in calculations (optional, not recommended since its precision is not updated).
+            shift_step: The step to use in shifting the depth in case of +inf delta.
+            max_shift: The maximum shift to use in case of +inf delta.
+        """
         self.check_positive(depth)
-        return self.pcf.delta(depth + self.CIDS(), limit=limit)
+        result = mm.mpf('+inf')
+        shift = 0
+        while result == mm.mpf('+inf'):
+            if shift > max_shift:
+                break
+            result = self.pcf.subs({n: n+shift}).delta(depth + self.CIDS(), limit=limit)
+            shift += shift_step
+        return result
     # CIDS is because delta used Limit.previous instead of Limit.current
     # so depth=1 corresponds to 2nd convergent of `Limit` class, i.e. pcf.A() * M1
     # meaning depth=1 in our terms
@@ -137,10 +153,14 @@ class PCFDynamics():
         """
         self.check_positive(depth)
         fit_depths = self.depths_for_fit(depth)
+        errors = self.errors(fit_depths, limit=limit, log=False)
+        if 0 in errors:
+            errors = [err + 1e-10 for err in errors] # to avoid log(0) in fitting
+        errors = [mm.log(err, 10) for err in errors]
         if fit_NOA:
-            return sc.optimize.curve_fit(self.paramfit_NOA, fit_depths, self.errors(fit_depths, limit=limit, log=True), maxfev=maxfev)[0]
+            return sc.optimize.curve_fit(self.paramfit_NOA, fit_depths, errors, maxfev=maxfev)[0]
         else:
-            return sc.optimize.curve_fit(self.paramfit, fit_depths, self.errors(fit_depths, limit=limit, log=True), maxfev=maxfev)[0]
+            return sc.optimize.curve_fit(self.paramfit, fit_depths, errors, maxfev=maxfev)[0]
     
     @staticmethod
     def depths_for_fit(depth):
@@ -164,20 +184,21 @@ class PCFDynamics():
             log: Whether to return the log of the errors.
         """
         depths = sorted(list(set(depths)))
-        depth_to_ind = {depth: i for i, depth in enumerate(list(range(1, depths[-1] + 1)))}
-        self.check_positive(depths[-1])
+        self.check_positive(depths[0])
+        iterations = [depth + self.CIDS() for depth in depths]
 
         if limit is None:
-            limits = self.pcf.limit(list(range(self.CIDS(), 2 * depths[-1] + self.CIDS())))
+            iterations.append(2 * depths[-1] + self.CIDS())
+            limits = self.pcf.limit(iterations)
             limit = limits[-1].as_float()
         else:
-            limits = self.pcf.limit(list(range(self.CIDS(), depths[-1] + self.CIDS())))
+            limits = self.pcf.limit(iterations)
 
+        errors = [abs(mm.mp.mpf(limit - limits[i].as_float())) for i, depth in enumerate(depths)]
         if log:
-            return [mm.log(abs(mm.mp.mpf(limit - limits[depth_to_ind[depth]].as_float())), 10) for depth in depths]
-        else:
-            return [abs(mm.mp.mpf(limit - limits[depth_to_ind[depth]].as_float())) for depth in depths]
-
+            errors = [mm.log(err, 10) for err in errors]
+        return errors
+    
     @ staticmethod
     def q_red(limit: Limit):
         p, q = limit.as_rational()
