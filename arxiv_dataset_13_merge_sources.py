@@ -1,4 +1,3 @@
-import pickle
 import pandas as pd
 import sympy as sp
 
@@ -18,8 +17,11 @@ DATAFRAMES_TO_MERGE = [
 SAVE_FILE = r'pcfs_28.12.24.pkl'
 
 # defaults
+TEST = False
 SAVE_DIR = r"C:\Users\totos\Desktop\13 - merge_dataframes_and_sources"
 SAVE_PATH = SAVE_DIR + '\\' + SAVE_FILE
+if TEST:
+    SAVE_PATH = SAVE_PATH.replace('.pkl', '_test.pkl')
 
 
 
@@ -28,14 +30,7 @@ def normalize_a_b(sympy_exp):
     return str(sp.expand(sympy_exp))
 
 
-def try_float(x):
-    try:
-        return float(x)
-    except:
-        return None
-
-
-def merge_sources(df):
+def merge_sources(df, test=False, verbose=False):
     # Add stringified columns for grouping
     df['a_str'] = df['a'].apply(normalize_a_b)
     df['b_str'] = df['b'].apply(normalize_a_b)
@@ -45,21 +40,38 @@ def merge_sources(df):
 
     # Group by the stringified (a, b) pairs
     for i, ((a_str, b_str), group) in enumerate(df.groupby(['a_str', 'b_str'])):
+        
+        if test and i > 3:
+            break
 
         # Retrieve the original a and b from the first row of the group
         a = group['a'].iloc[0]
         b = group['b'].iloc[0]
 
         # Collect unique limits, excluding None
-        unique_limits = list({limit for limit in group['limit'] if limit is not None})
+        if verbose:
+            print('group `limit`', group['limit'].values)
+        unique_limits = list({limit.subs({sp.Symbol('pi'): sp.pi}) for limit in list(group['limit'].values) if limit is not None})
         # apparently this does not fully work, need to compare floats because there are still different representations
         # of the same float
-
-        lim2floats = {lim: try_float(lim.evalf(10)) for lim in unique_limits}
+        # evaluating to floats did not work because instead of being sp.pi all instances of pi from LIReC were sp.Symbol('pi')
+        # this has been corrected in utils.lirec_identify_result_to_sympy, and appears here too to correct the dataframes
+        # already identified.
+        if verbose:
+            print('unique_limits:', unique_limits)
+        lim2floats = {lim: lim.evalf(100) for lim in unique_limits}
+        if verbose:
+            print('lim2floats:', lim2floats)
         floats2lim = {v: k for k, v in lim2floats.items() if v is not None}
-        unique_floats = list(set([flt for flt in lim2floats.values() if flt is not None]))
+        if verbose:
+            print('floats2lim:', floats2lim)
+        unique_floats = list(set(floats2lim.keys()))
+        if verbose:
+            print('unique_floats:', unique_floats)
         num_floats = len(unique_floats)
         limit = floats2lim[unique_floats[0]] if num_floats == 1 else None
+        if verbose:
+            print(limit)
 
         # Gather sources as dictionaries
         source_types = group['source_type'].unique()
@@ -69,7 +81,7 @@ def merge_sources(df):
         results.append({
             'a': a,
             'b': b,
-            'limit': limit,
+            'limit': sp.cancel(limit),
             'first20convergents' : group['first20convergents'].to_list()[0],
             'source_types': source_types,
             'limit_candidates': unique_limits,
@@ -150,7 +162,7 @@ if __name__ == "__main__":
     merged_df = pd.concat(dataframes, ignore_index=True)
 
     # Process the merged dataframe
-    processed_df = merge_sources(merged_df)
+    processed_df = merge_sources(merged_df, test=TEST, verbose=TEST)
 
     # Save the processed dataframe
     processed_df.to_pickle(SAVE_PATH)
