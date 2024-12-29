@@ -15,7 +15,7 @@ DATAFRAMES_TO_MERGE = [
 ]
 
 # output
-SAVE_FILE = r'pcfs_28.12.24_test.pkl'
+SAVE_FILE = r'pcfs_28.12.24.pkl'
 
 # defaults
 SAVE_DIR = r"C:\Users\totos\Desktop\13 - merge_dataframes_and_sources"
@@ -44,7 +44,8 @@ def merge_sources(df):
     results = []
 
     # Group by the stringified (a, b) pairs
-    for (a_str, b_str), group in df.groupby(['a_str', 'b_str']):
+    for i, ((a_str, b_str), group) in enumerate(df.groupby(['a_str', 'b_str'])):
+
         # Retrieve the original a and b from the first row of the group
         a = group['a'].iloc[0]
         b = group['b'].iloc[0]
@@ -63,13 +64,13 @@ def merge_sources(df):
         # Gather sources as dictionaries
         source_types = group['source_type'].unique()
         sources = group[['origin_formula_type', 'source_type', 'source', 'metadata', 'limit']].to_dict(orient='records')
-
+        
         # Append results
         results.append({
             'a': a,
             'b': b,
             'limit': limit,
-            'first20convergents' : group['first20convergents'],
+            'first20convergents' : group['first20convergents'].to_list()[0],
             'source_types': source_types,
             'limit_candidates': unique_limits,
             'sources': sources
