@@ -3,7 +3,7 @@ from ramanujantools.pcf import PCF
 from LIReC.db.access import db
 from LIReC.lib.pslq_utils import PolyPSLQRelation, get_exponents, reduce
 from operator import add, mul
-from sympy import Symbol, sympify, Add, Mul, Rational
+from sympy import Symbol, sympify, Add, Mul, Rational, pi
 import pandas as pd
 import re
 from typing import Collection, Optional, Union
@@ -115,7 +115,11 @@ def lid(strings, constants=['pi'], as_sympy=False) -> Collection[Optional[Union[
     return results[0] if len(results) == 1 else None if results == [] else results
 
 
-def lirec_identify_result_to_sympy(polypslq):
+# NOTE: only works for pi at the moment
+# meaning other constants will not be returned as their sympy objects,
+# but instead as sympy symbols.
+# TODO: fix this
+def lirec_identify_result_to_sympy(polypslq, verbose=False):
     r"""
     Taken from `LIReC.lib.pslq_utils.PolyPSLQRelation.__str__`.
     """
@@ -140,7 +144,16 @@ def lirec_identify_result_to_sympy(polypslq):
         res = True
         num = reduce(add, [-t for t in expr.args if polypslq.isolate not in t.free_symbols], 0)
         denom = reduce(add, [t/polypslq.isolate for t in expr.args if polypslq.isolate in t.free_symbols], 0)
+        if verbose:
+            print(num, denom)
+            print(type(num), type(denom))
         res = sympify((num / denom).expand())
+        if verbose:
+            print(res.free_symbols)
+        res = res.subs({Symbol('pi'): pi}) # replace 'pi' with sympy's pi
+        if verbose:
+            print('Substituted sp.pi for `pi` symbol:', res)
+            print(res.free_symbols)
         # this will not be perfect if isolate appears with an exponent! will also be weird if either num or denom is 0
     #     res = (fr'\frac{{{num}}}{{{denom}}}' if polypslq.latex_mode else f'{num/denom}') + f' ({polypslq.precision})' 
     #     res = (f'{polypslq.isolate} = ' if polypslq.include_isolated else '') + res

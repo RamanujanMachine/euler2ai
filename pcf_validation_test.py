@@ -43,3 +43,9 @@ def test_pcf_compute_to():
 
 def test_identify_pcf_limit():
     assert str(identify_pcf_limit(PCF(2*n + 1, n**2))) == '4/pi'
+    assert str(identify_pcf_limit(PCF(3*n + 1, -2*n**2 + n))) == '2/pi'
+    assert str(identify_pcf_limit(PCF(3*n + 8, -2*n**2 - 5*n + 3))) == '-9*pi/(-32 + 9*pi)'
+    assert str(identify_pcf_limit(PCF(
+        sp.sympify('3*n**4/4 + 199*n**3/80 + 911*n**2/320 + 1573*n/1280 + 63/512'),
+        sp.sympify('n**3*(12800*n**5 + 23040*n**4 + 2048*n**3 - 14928*n**2 - 8242*n - 1173)/51200')))) \
+        == '69/(-2560 + 960*pi)'
