@@ -1,4 +1,5 @@
 # miscellaneous utility functions.
+from arxiv_dataset_utils import build_formula # TODO: decide whether to move this here
 from ramanujantools.pcf import PCF
 from LIReC.db.access import db
 from LIReC.lib.pslq_utils import PolyPSLQRelation, get_exponents, reduce
@@ -91,7 +92,24 @@ def display_df(df: pd.DataFrame, max_rows: int = 10, from_ind=0, to_ind=None, **
     display(HTML(df.iloc[from_ind:to_ind].to_html(max_rows=max_rows, **kwargs)))
 
 
-def lid(strings, constants=['pi'], as_sympy=False) -> Collection[Optional[Union[Add, Mul, Symbol]]]:
+# for final dataset
+# TODO: decide whether to create a new file for functions like this one
+def find_paper_id(pcfs, id, verbose=False):
+    r"""
+    Locates all pandas indices for which the PCF at the indices has a source with the given paper id.
+    """
+    rows_of_interest = []
+    for i, row in pcfs.iterrows():
+        for source in row['sources']:
+            if isinstance(source['source'], dict) and 'paper_id' in source['source'].keys() and source['source']['paper_id'] == id:
+                if verbose:
+                    print(source['source'])
+                    display(build_formula(source['origin_formula_type'], source['metadata']['info']))
+                rows_of_interest.append(i)
+    return list(set(rows_of_interest))
+
+
+def lid(strings, constants=['pi'], min_roi=1.5, as_sympy=False) -> Collection[Optional[Union[Add, Mul, Symbol]]]:
     r"""
     Identify relation to pi using LIReC.
     
@@ -105,9 +123,9 @@ def lid(strings, constants=['pi'], as_sympy=False) -> Collection[Optional[Union[
         (object is sympy if as_sympy otherwise a string)
     """
     if isinstance(strings, list):
-        results = db.identify([*[str(string) for string in strings], *constants])
+        results = db.identify([*[str(string) for string in strings], *constants], min_roi=min_roi)
     else:
-        results = db.identify([str(strings), *constants])
+        results = db.identify([str(strings), *constants], min_roi=min_roi)
     if as_sympy:
         results = [lirec_identify_result_to_sympy(res) for res in results]
     else:
