@@ -15,6 +15,21 @@ n = symbols('n')
 # Legacy methods
 
 
+def list_of_empirical_coboundaries(self, up_to=None, divide_by_ij: Optional[Tuple[int, int]] = None):
+        if not hasattr(self, 'empirical_coboundaries'):
+            raise ValueError('You need to run `solve_empirical_U` first')
+        if up_to is None:
+            up_to = self.max_i
+        if divide_by_ij is not None:
+            divide = self.empirical_coboundaries[2 * divide_by_ij[0] + divide_by_ij[1]][:up_to]
+        else:
+            divide = [1] * up_to
+
+        return [Matrix([[sp.Rational(col[0], divide[i]), sp.Rational(col[1], divide[i])],
+                        [sp.Rational(col[2], divide[i]), sp.Rational(col[3], divide[i])]])
+                        for i, col in enumerate(self.empirical_coboundaries.T)]
+
+
 def solve_empirical_U_inefficient(self, max_i, verbose=False):
     """
     Computes the limit at different starting indices by peeling the initial layers of the recursion matrix.
