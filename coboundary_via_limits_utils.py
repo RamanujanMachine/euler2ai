@@ -3,10 +3,7 @@ from ramanujantools import Matrix
 import sympy as sp
 import numpy as np
 import scipy as sc
-import cvc5.pythonic as cp
-
 import matplotlib.pyplot as plt
-
 from typing import Tuple, Union
 from IPython.display import display
 
@@ -70,30 +67,40 @@ def fit_logn_to_graph(sequence, rounded=True, plot=False, fit_from=1):
         return round(value)
 
 
-def polynomials_from_nullspace(vector, num_deg, den_deg, symbol=n):
+def polynomials_from_nullspace(vector, num_deg, den_deg, symbol=n, verbose=False):
     assert len(vector) == num_deg + den_deg + 2
-    vector = Matrix(vector).applyfunc(sp.nsimplify)
-    num_den_mat = Matrix([sp.Poly(vector[:num_deg + 1][::-1], symbol).expr, sp.Poly(vector[num_deg + 1:][::-1], symbol).expr])
-    num_den_mat = (num_den_mat * num_den_mat.denominator_lcm).applyfunc(lambda x: sp.expand(sp.simplify(x)))
+    vector = Matrix(vector) # .applyfunc(sp.nsimplify) - causes problems, introduces irrational coefficients for some reason.
+    num, den = sp.Poly(vector[:num_deg + 1][::-1], symbol), sp.Poly(vector[num_deg + 1:][::-1], symbol) # domain should be Q
+    if verbose:
+        display(num, den)
+    num_den_mat = Matrix([num.expr, den.expr])
+    num_den_mat = (num_den_mat * num_den_mat.denominator_lcm).applyfunc(lambda x: sp.expand(sp.cancel(x)))
     gcd = num_den_mat.gcd
-    return (num_den_mat[0] / gcd).simplify().expand(), (num_den_mat[1] / gcd).simplify().expand()
+    num, den = (num_den_mat[0] / gcd).cancel().expand(), (num_den_mat[1] / gcd).cancel().expand()
+    if verbose:
+        display(num, den)
+    return num, den
 
 
-def get_rational_hypotheses(empirical_numerators, empirical_denominators, verbose=False,
-                            max_deg=None, num_deg_den_deg: Union[Tuple[int, int], str] = 'half',
-                            initial_index=1):
+def get_rational_hypotheses(empirical_numerators, empirical_denominators, max_deg=None,
+                            num_deg_den_deg: Union[Tuple[int, int], str] = 'half',
+                            initial_index=1, verbose=False):
     """
     Fits rational functions to the given empirical numerators and denominators.
+
     Args:
-        empirical_numerators: list of numerators of the rational function
-        empirical_denominators: list of denominators of the rational function
-        verbose: whether to print intermediate results
-        max_deg: maximum degree of the polynomials to consider
-        num_deg_den_deg: tuple of the degrees of the numerator and denominator polynomials, or
+        * empirical_numerators: list of numerators of the rational function
+        * empirical_denominators: list of denominators of the rational function
+        * verbose: whether to print intermediate results
+        * max_deg: maximum degree of the polynomials to consider
+        * num_deg_den_deg: tuple of the degrees of the numerator and denominator polynomials, or
             'auto' to use a heuristic to determine the difference between the degrees, or
             'half' allow the numerator and denominator to have the same degree (default).
-        initial_index: modifies the first value of n to `initial_index` (default is 1,
+        * initial_index: modifies the first value of n to `initial_index` (default is 1,
         see documentation of `construct_matrix`).
+
+    Raises:
+        NoSolutionError: if no solution is found.
     """
     N = len(empirical_numerators)
     assert N == len(empirical_denominators)
@@ -126,90 +133,9 @@ def get_rational_hypotheses(empirical_numerators, empirical_denominators, verbos
     if null:
         for vec in null:
             Ppoly, Qpoly = polynomials_from_nullspace(vec, Pdeg, Qdeg)
+            # if Ppoly is None or Qpoly is None: # the null vector is not a polynomial over the rationals Q
+                # continue
             hypotheses.add((Ppoly, Qpoly))
     else:
         raise NoSolutionError('No solution found: Nullspace is empty. Polynomial degrees may be too low. Try taking more data points.')
     return list(hypotheses)
-
-
-# Obsolete - for the obsolete `solver_extract_U` method of CobViaLim class
-
-
-def check_zero_dict(dic, keys):
-    return all([dic[key] == 0 or dic[key] == float(0) for key in dic.keys() if key in keys])
-
-
-def sympy_fit_rational_function(empirical_numerators, empirical_denominators, num_deg, den_deg, symbol=n):
-    num_coeffs = [symbols(f'num_{i}') for i in range(num_deg + 1)]
-    den_coeffs = [symbols(f'den_{i}') for i in range(den_deg + 1)]
-    all_vars = num_coeffs + den_coeffs
-
-    def rational_function(r):
-        numerator = sum(num_coeffs[i] * r**i for i in range(num_deg + 1))
-        denominator = sum(den_coeffs[i] * r**i for i in range(den_deg + 1))
-        return numerator, denominator
-
-    equations = []
-    for i, (emp_num, emp_den) in enumerate(zip(empirical_numerators, empirical_denominators)):
-        func_num, func_den = rational_function(i + 1)
-        equations.append(func_num * emp_den - func_den * emp_num)
-    solutions = sp.solve(equations, all_vars, dict=True)
-
-    dummy_symb = symbols('x')
-    found_solution = False
-    for sol in solutions:
-        vars_left = [v for v in all_vars if v not in sol.keys()]
-        subs_dict = {var: 1 for var in vars_left}
-        assignment = {key: sp.Rational((val * dummy_symb / dummy_symb).subs(subs_dict)) for key, val in sol.items()}
-        assignment.update(subs_dict)
-        if check_zero_dict(assignment, den_coeffs):
-            continue
-        else:
-            found_solution = True
-            break
-
-    if not found_solution:
-        print('No viable (nontrivial + defined) solution found. Solutions found:')
-        print(solutions)
-        raise NoSolutionError('No viable (nontrivial + defined) solution found.')
-
-    numerator = sum(num_coeffs[i] * symbol**i for i in range(num_deg + 1))
-    denominator = sum(den_coeffs[i] * symbol**i for i in range(den_deg + 1))
-    quotient = sp.simplify((numerator / denominator).subs(assignment))
-
-    return quotient
-
-
-def cvc5_fit_rational_function(empirical_numerators, empirical_denominators, num_deg, den_deg, symbol=n):
-    num_coeffs = [cp.Int(f'num_{i}') for i in range(num_deg + 1)]
-    den_coeffs = [cp.Int(f'den_{i}') for i in range(den_deg + 1)]
-
-    def rational_function(r):
-        numerator = sum(num_coeffs[i] * r**i for i in range(num_deg + 1))
-        denominator = sum(den_coeffs[i] * r**i for i in range(den_deg + 1))
-        return numerator, denominator
-
-    solver = cp.Solver()
-    if len(den_coeffs) > 1:
-        solver.add(cp.Or([v != 0 for v in den_coeffs]))
-    else:
-        solver.add(den_coeffs[0] != 0)
-
-    for i, (emp_num, emp_den) in enumerate(zip(empirical_numerators, empirical_denominators)):
-        func_num, func_den = rational_function(i + 1)
-        solver.add(func_num * emp_den == func_den * emp_num)
-
-    if solver.check() == cp.sat:
-        model = solver.model()
-        num_values = [model.evaluate(coeff).as_long() for coeff in num_coeffs]
-        den_values = [model.evaluate(coeff).as_long() for coeff in den_coeffs]
-
-        numerator = sum(sp.Rational(num_values[i]) * symbol**i for i in range(num_deg + 1))
-        denominator = sum(sp.Rational(den_values[i]) * symbol**i for i in range(den_deg + 1))
-
-        quotient = sp.simplify(numerator / denominator)
-
-        return quotient
-
-    else:
-        raise NoSolutionError('Equations not satisfiable.')

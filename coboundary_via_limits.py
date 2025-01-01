@@ -82,7 +82,7 @@ class CobViaLim():
         self.last_U_numerator_gcd = U.gcd # gcd is NOT necessarily the same as gcd of original numerators: it is at least the original gcd
         if reduce:
             U /= self.last_U_numerator_gcd
-            U = U.simplify()
+            U = U.applyfunc(sp.cancel)
         if verbose:
             display(sol)
             display(U)
@@ -286,7 +286,7 @@ class CobViaLim():
         solutions = []
         for ind, u1_to_4 in enumerate(product(*hypotheses)):
             lcm = sp.lcm([u[1] for u in u1_to_4]) # of denominators
-            u1_to_4 = [sp.simplify(u[0] * lcm / u[1]) for u in u1_to_4]
+            u1_to_4 = [sp.cancel(u[0] * lcm / u[1]) for u in u1_to_4]
             U_hypothesis = (Matrix([[u1_to_4[0], u1_to_4[1]], [u1_to_4[2], u1_to_4[3]]])).applyfunc(sp.expand)
             if verbose:
                 print(f'Coboundary matrix hypothesis {ind + 1}:')
@@ -317,7 +317,7 @@ class CobViaLim():
                     break
             if not exist_nonzero:
                 raise ValueError('Coboundary products are zero matrices. Coboundary condition failed.') 
-            g1, g2 = (num_ij / den_ij).simplify().as_numer_denom()
+            g1, g2 = (num_ij / den_ij).cancel().as_numer_denom()
             self.g1 = g1; self.g2 = g2
             return g1, g2
         else:
