@@ -46,7 +46,7 @@ class CobViaLim():
         return get_limit_from_i(self.recursion_matrix1, self.limit1, i, A_matrix=self.A_matrix1), \
                get_limit_from_i(self.recursion_matrix2, self.limit2, i, A_matrix=self.A_matrix2)
 
-    def solve_empirical_U_i(self, i, verbose=True, reduce=True, return_equations=False):
+    def solve_empirical_U_i(self, i, reduce=True, return_equations=False, verbose=False):
         recursion1_i_limit, recursion2_i_limit = self.get_limits_from_i(i)
         num1, den1 = recursion1_i_limit.as_numer_denom()
         num2, den2 = recursion2_i_limit.as_numer_denom()
@@ -73,6 +73,8 @@ class CobViaLim():
             return new_equations, coefficients
         
         sol = sp.solve(new_equations, coefficients)
+        if verbose:
+            print(sol)
         U = Matrix(2, 2, lambda i, j: sol[coefficients[i * 2 + j]])
         self.last_U_denominator_lcm = U.denominator_lcm
         U *= self.last_U_denominator_lcm # U.denominator_lcm # cached so does not cost extra
@@ -86,7 +88,7 @@ class CobViaLim():
             display(U)
         return U
 
-    def solve_empirical_U(self, max_i, verbose=False, reduce=True):
+    def solve_empirical_U(self, max_i, reduce=True, verbose=False):
         U_denominator_lcms = []
         U_numerator_gcds = []
         self.max_i = max_i
@@ -120,7 +122,7 @@ class CobViaLim():
 
     def list_of_empirical_coboundaries(self, up_to=None, divide_by_ij: Optional[Tuple[int, int]] = None):
         if not hasattr(self, 'empirical_coboundaries'):
-            raise ValueError('You need to run `solve_U` first')
+            raise ValueError('You need to run `solve_empirical_U` first')
         if up_to is None:
             up_to = self.max_i
         if divide_by_ij is not None:
@@ -132,9 +134,9 @@ class CobViaLim():
                         [sp.Rational(col[2], divide[i]), sp.Rational(col[3], divide[i])]])
                         for i, col in enumerate(self.empirical_coboundaries.T)]
 
-    def plot_U(self, up_to=None, divide_by_ij: Optional[Tuple[int, int]] = None, max_description_length=30):
+    def plot_U(self, up_to=None, divide_by_ij: Optional[Tuple[int, int]] = (0,0), max_description_length=30):
         if not hasattr(self, 'empirical_coboundaries'):
-            raise ValueError('You need to run `solve_U` first')
+            raise ValueError('You need to run `solve_empirical_U` first')
         if up_to is None:
             up_to = self.max_i
         if divide_by_ij is not None:
@@ -154,7 +156,7 @@ class CobViaLim():
 
     def plot_U_denominator_lcms(self, up_to=None):
         if not hasattr(self, 'U_denominator_lcms'):
-            raise ValueError('You need to run `solve_U` first')
+            raise ValueError('You need to run `solve_empirical_U` first')
         if up_to is None:
             up_to = self.max_i
         fig, ax = plt.subplots()
@@ -165,7 +167,7 @@ class CobViaLim():
 
     def plot_U_numerator_gcds(self, up_to=None):
         if not hasattr(self, 'U_numerator_gcds'):
-            raise ValueError('You need to run `solve_U` first')
+            raise ValueError('You need to run `solve_empirical_U` first')
         if up_to is None:
             up_to = self.max_i
         fig, ax = plt.subplots()
@@ -176,7 +178,7 @@ class CobViaLim():
 
     def plot_U_determinants(self, up_to=None):
         if not hasattr(self, 'empirical_coboundaries'):
-            raise ValueError('You need to run `solve_U` first')
+            raise ValueError('You need to run `solve_empirical_U` first')
         if up_to is None:
             up_to = self.max_i
         fig, ax = plt.subplots()
@@ -249,26 +251,26 @@ class CobViaLim():
                                 verbose=verbose, return_prod=return_prod, exact=exact, return_scale=return_scale)
 
     def extract_U(self, fit_up_to=None, fit_from=0, divide_by_ij=(0,0),
-                all_solutions=False, verbose=False, auto_resolve_denominator=True):
+                all_solutions=False, auto_resolve_denominator=True, verbose=False):
         """
         Extracts coboundary matrix hypotheses and returns a verified one.
+        
         Args:
-            fit_up_to: the index to which the fit should be applied.
-            fit_from: the index from which the fit should be applied.
-            divie_by_ij: the element of the matrix by which to convert the empirical coboundary matrices
+            * fit_up_to: the index to which the fit should be applied.
+            * fit_from: the index from which the fit should be applied.
+            * divie_by_ij: the element of the matrix by which to convert the empirical coboundary matrices
             to rational sequences (if a coboundary exists).
-            all_solutions: whether to return all viable coboundary matrices.
+            * all_solutions: whether to return all viable coboundary matrices.
             Default is False (return just one coboundary matrix if one is found).
-            verbose: print and display rational function hypotheses then coboundary matrix hypotheses.
-            auto_resolve_denominator: in case the empirical sequence of element `divide_by_ij` zeros out
+            * auto_resolve_denominator: in case the empirical sequence of element `divide_by_ij` zeros out
             somewhere, find a different element by which to divide. If all elemenets of the empirical
             coboundary matrices zero out at some point, find the element that has its last zero in the
             smallest index, truncate all sequences to one after this index and take the nonzero sequence
-            to be the empirical denominator. 
-            Default is True.
+            to be the empirical denominator. Default is True.
+            * verbose: print and display rational function hypotheses then coboundary matrix hypotheses.
         """
         if not hasattr(self, 'empirical_coboundaries'):
-            raise ValueError('You need to run `solve_U` first')
+            raise ValueError('You need to run `solve_empirical_U` first')
         if fit_up_to is None:
             fit_up_to = self.empirical_coboundaries.shape[1]
         
@@ -306,11 +308,12 @@ class CobViaLim():
             if self.check_coboundary(U = U_hypothesis):
                 self.U = U_hypothesis
                 if not all_solutions:
-                    return self.U
+                    solutions = self.U
+                    break
                 else:
                     solutions.append(U_hypothesis)
 
-        if solutions:
+        if isinstance(solutions, list):
             self.U = solutions[-1]
         return solutions
 
@@ -337,7 +340,7 @@ class CobViaLim():
     def extract_coboundary_triple(self, fit_up_to=None, fit_from=0, divide_by_ij=(0,0),
                                   auto_resolve_denominator=True, verbose=False):
         if not hasattr(self, 'empirical_coboundaries'):
-            raise ValueError('You need to run `solve_U` first')
+            raise ValueError('You need to run `solve_empirical_U` first')
 
         self.extract_U(fit_up_to=fit_up_to, fit_from=fit_from, divide_by_ij=divide_by_ij,
                 all_solutions=False, verbose=verbose, auto_resolve_denominator=auto_resolve_denominator)
