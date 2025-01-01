@@ -282,8 +282,11 @@ class CobTransformShift(CobTransform):
         return CobTransformShift(self.matrix, - self.shift, symbol=self.symbol)
 
 
-class ConvertToPCFError(Exception):
-    pass
+# class ConvertToPCFError(Exception):
+    # pass
+#  Raises:
+#         ConvertToPCFError: If the PCF is not well-defined at a certain depth
+#             or if the coboundary matrix determinant zeros out at a certain depth
 
 
 class CobTransformAsPCF(CobTransform):
@@ -305,9 +308,7 @@ class CobTransformAsPCF(CobTransform):
     Returns:
         CobTransform: The coboundary transformation
 
-    Raises:
-        ConvertToPCFError: If the PCF is not well-defined at a certain depth
-            or if the coboundary matrix determinant zeros out at a certain depth
+   
     """
     def __init__(self, matrix: Matrix, deflate_all=True, shift_as_necessary_pcf=True,
                  shift_as_necessary_cob=True, symbol: sp.Symbol = n, verbose=False):
@@ -317,31 +318,22 @@ class CobTransformAsPCF(CobTransform):
         polys = as_pcf_polys(matrix, deflate_all=deflate_all)
 
         # TODO: make shift as necessary a feature of CobTransform? and inherit from CobTransform
-        shift = get_shift(pcf)
-        if shift > 0:
-            if not shift_as_necessary_pcf:
-                raise ConvertToPCFError(f'PCF not well-defined at depth {shift-1}')
-
-        cob_zeros = [z for z in sp.solve(U.det(), symbol) if isinstance(z, sp.Integer) or isinstance(z, int)]
-        if cob_zeros:
-            if shift_as_necessary_cob:
+        shift = 0
+        if shift_as_necessary_pcf:
+            shift = get_shift(pcf)
+        if shift_as_necessary_cob:
+            cob_zeros = [z for z in sp.solve(U.det(), symbol) if isinstance(z, sp.Integer) or isinstance(z, int)]
+            if cob_zeros:
                 shift = max(shift, sp.Integer(max(cob_zeros) + 1))
-            else:
-                raise ConvertToPCFError(f'Coboundary matrix determinant zeros out at {symbol}={cob_zeros}: det = {U.det()}')
-            
-        multiplier_zeros = [z for z in sp.solve(polys[1], symbol) if isinstance(z, sp.Integer) or isinstance(z, int)]
-        multiplier_zeros += [z for z in sp.solve(polys[0], symbol) if isinstance(z, sp.Integer) or isinstance(z, int)]
-        if multiplier_zeros:
-            if shift_as_necessary_cob:
+            multiplier_zeros = [z for z in sp.solve(polys[1], symbol) if isinstance(z, sp.Integer) or isinstance(z, int)]
+            multiplier_zeros += [z for z in sp.solve(polys[0], symbol) if isinstance(z, sp.Integer) or isinstance(z, int)]
+            if multiplier_zeros:
                 shift = max(shift, sp.Integer(max(multiplier_zeros) + 1))
-                pass
-            else:
-                raise ConvertToPCFError(f'Multiplier zeros out at {symbol}={multiplier_zeros}: a_n = {polys[0]}, b_n = {polys[1]}')
         
         cobtransform = CobTransform(U, polys[0] / polys[1], symbol=symbol)
-        if verbose:
-            print('shift:', shift)
         if shift > 0:
+            if verbose:
+                print('shift:', shift)
             cobtransform.compose(CobTransformShift(pcf.M(), shift, symbol=symbol))
         super().__init__(cobtransform.U, cobtransform.multiplier, transforms=[*cobtransform.transforms], symbol=symbol)
 
