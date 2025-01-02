@@ -90,11 +90,31 @@ class FoldToPCFTransform(RecurrenceTransform):
         self.factor = factor
         fold = FoldTransform(self.factor, symbol=symbol)
         folded = fold(self.matrix)
-        aspcf = CobTransformAsPCF(folded, deflate_all=deflate_all,
-                                  shift_as_necessary_pcf=shift_as_necessary_pcf,
-                                  shift_as_necessary_cob=shift_as_necessary_cob,
-                                  symbol=symbol, verbose=verbose)
+        aspcf = CobTransformAsPCF(folded, deflate_all=deflate_all, symbol=symbol)
         transforms = [fold, aspcf]
+
+        # TODO: make shift as necessary a feature of CobTransform? and inherit from CobTransform
+        shift = 0
+        if shift_as_necessary_pcf or shift_as_necessary_cob: # need either way for the shift at the end
+            as_pcf_mat = RecurrenceTransform(transforms, symbol=symbol)(matrix)
+            pcf = PCF(*list(as_pcf_mat[:, 1])[::-1])
+        if shift_as_necessary_pcf:
+            shift = get_shift(pcf)
+        if shift_as_necessary_cob:
+            cob_zeros = [z for z in sp.solve(aspcf.U.det(), symbol) if isinstance(z, sp.Integer) or isinstance(z, int)]
+            if cob_zeros:
+                shift = max(shift, sp.Integer(max(cob_zeros) + 1))
+            polys = aspcf.multiplier.as_numer_denom()
+            multiplier_zeros = [z for z in sp.solve(polys[1], symbol) if isinstance(z, sp.Integer) or isinstance(z, int)]
+            multiplier_zeros += [z for z in sp.solve(polys[0], symbol) if isinstance(z, sp.Integer) or isinstance(z, int)]
+            if multiplier_zeros:
+                shift = max(shift, sp.Integer(max(multiplier_zeros) + 1))
+        
+        if shift > 0:
+            if verbose:
+                print('shift:', shift)
+            transforms.append(CobTransformShift(as_pcf_mat, shift, symbol=symbol)
+)
         super().__init__(transforms, symbol=symbol)
 
 
@@ -197,16 +217,12 @@ class CobTransform():
                             transforms=[*t1.transforms, *t2.transforms],
                             symbol=t1.symbol)
     
-    def compose(self, other: 'CobTransform', inplace=True):
+    def compose(self, other: 'CobTransform') -> 'CobTransform':
         r"""
         Compose self with another coboundary transformation.
         See static_compose.
         """
-        transform = CobTransform.static_compose(self, other)
-        if inplace:
-            self.__init__(transform.U, transform.multiplier, [*transform.transforms])
-        else:
-            return transform
+        return CobTransform.static_compose(self, other)
     
     @staticmethod
     def static_compose_list(t_list):
@@ -219,15 +235,11 @@ class CobTransform():
             current = CobTransform.static_compose(current, t)
         return current
     
-    def compose_list(self, t_list, inplace=True):
+    def compose_list(self, t_list) -> 'CobTransform':
         r"""
         Compose self with a list of coboundary transformations.
         """
-        transform = CobTransform.static_compose(self, CobTransform.static_compose_list(t_list))
-        if inplace:
-            self.__init__(transform.U, transform.multiplier, [*transform.transforms])
-        else:
-            return transform
+        return CobTransform.static_compose(self, CobTransform.static_compose_list(t_list))
     
     def transform_limit(self, limit):
         return mobius(self.U.inv().subs({self.symbol: 1}), limit)
@@ -297,12 +309,6 @@ class CobTransformAsPCF(CobTransform):
     Args:
         * matrix: the matrix to transform
         * deflate_all: whether to deflate all zeros
-        * shift_as_necessary_pcf: whether to apply a shift if necessary
-            to make the PCF well-defined (numerator of b != 0 and and 
-            denominators of a and b != 0 at all depths)
-        * shift_as_necessary_cob: whether to apply a shift if necessary
-            to make the coboundary matrix well-defined at all depths 
-            (det(U) != 0) (TODO: add to CobTransform? then: see documentation of CobTransform)
         * symbol: the symbol
 
     Returns:
@@ -310,32 +316,11 @@ class CobTransformAsPCF(CobTransform):
 
    
     """
-    def __init__(self, matrix: Matrix, deflate_all=True, shift_as_necessary_pcf=True,
-                 shift_as_necessary_cob=True, symbol: sp.Symbol = n, verbose=False):
+    def __init__(self, matrix: Matrix, deflate_all=True, symbol: sp.Symbol = n):
         self.matrix = matrix
-        pcf = as_pcf(matrix, deflate_all=deflate_all)
         U = as_pcf_cob(matrix, deflate_all=deflate_all)
         polys = as_pcf_polys(matrix, deflate_all=deflate_all)
-
-        # TODO: make shift as necessary a feature of CobTransform? and inherit from CobTransform
-        shift = 0
-        if shift_as_necessary_pcf:
-            shift = get_shift(pcf)
-        if shift_as_necessary_cob:
-            cob_zeros = [z for z in sp.solve(U.det(), symbol) if isinstance(z, sp.Integer) or isinstance(z, int)]
-            if cob_zeros:
-                shift = max(shift, sp.Integer(max(cob_zeros) + 1))
-            multiplier_zeros = [z for z in sp.solve(polys[1], symbol) if isinstance(z, sp.Integer) or isinstance(z, int)]
-            multiplier_zeros += [z for z in sp.solve(polys[0], symbol) if isinstance(z, sp.Integer) or isinstance(z, int)]
-            if multiplier_zeros:
-                shift = max(shift, sp.Integer(max(multiplier_zeros) + 1))
-        
-        cobtransform = CobTransform(U, polys[0] / polys[1], symbol=symbol)
-        if shift > 0:
-            if verbose:
-                print('shift:', shift)
-            cobtransform.compose(CobTransformShift(pcf.M(), shift, symbol=symbol))
-        super().__init__(cobtransform.U, cobtransform.multiplier, transforms=[*cobtransform.transforms], symbol=symbol)
+        super().__init__(U, polys[0] / polys[1], symbol=symbol)
 
     def inv(self):
         return CobTransform(self.U.inv(), 1 / self.multiplier, symbol=self.symbol)
