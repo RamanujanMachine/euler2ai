@@ -1,10 +1,12 @@
 # will contain code from sum_to_recursion.ipynb
 # eventually added from arxiv_dataset12, arxiv_dataset12 files
 
-from utils import lid
+from utils import lid, round_mpf, lirec_identify_result_to_sympy
 from arxiv_dataset_gpt_utils import identify_value
 from ramanujantools import Matrix, Limit
 from ramanujantools.pcf.pcf import PCF
+from LIReC.lib.pcf import PCF as LIReCPCF
+from LIReC.lib.pslq_utils import PolyPSLQRelation
 from typing import Union, Optional
 
 import sympy as sp
@@ -194,3 +196,39 @@ def identify_pcf_limit(pcf, extracted_lim=None, equation_string=None, constants=
                 sympy_limit = sympy_limit.subs({tempconst: extracted_lim})
 
     return None if sympy_limit is None else sympy_limit.factor().cancel()
+
+
+# TODO: auto_deflate is set to False because there is no support for returning the
+# deflation factor at the moment?
+def lid_pcf_limit(pcf: Union[LIReCPCF, PCF], depth=None, convergence_rate=[1, 0, 0], convergence_rate_threshold=5e-2, 
+                  depths={'se': 2000, 'e': 4000, 'p': 10000}, digits=1000, constants=['pi'],
+                  min_roi=2, as_sympy=True, return_polypslq=False, verbose=False):
+
+    pcf = LIReCPCF(pcf.a_n, pcf.b_n, auto_deflate=False) if isinstance(pcf, PCF) else pcf
+    if depth is None:
+        convergence_type = 'se' # 'super_exponential'
+        if convergence_rate[0] < convergence_rate_threshold:
+            convergence_type = 'e'
+        if convergence_rate[1] < convergence_rate_threshold:
+            convergence_type = 'p'
+        depth = depths[convergence_type]
+        if verbose:
+            print('Convergence type:', convergence_type)
+    if verbose:
+        print('Evaluating to depth:', depth)
+    pcf.eval(depth=depth)
+    if verbose:
+        print('Empirical limit:', str(pcf.value)[:30])
+        print('Precision:', pcf.precision)
+        print('Identifying limit')
+    results = lid(round_mpf(pcf.value, min(max(int(pcf.precision) - 1, 1), digits)), constants=constants,
+                 min_roi=min_roi, as_sympy=False, return_polypslq=True)
+    if verbose:
+        print('ROI:', [res.roi for res in results] if isinstance(results, list) else None)
+    sympy_results = [lirec_identify_result_to_sympy(res) for res in results]
+    if verbose:
+        print('Results:', sympy_results)
+    if as_sympy:
+        results = sympy_results
+    results = results[0].simplify() if len(results) == 1 else None if results == [] else results
+    return results

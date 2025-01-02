@@ -41,6 +41,10 @@ def test_pcf_compute_to():
     assert pcf_compute_to(pcf, 3500, 1000, convergent.current) == pcf.limit(3500+1)
 
 
+def test_lid_pcf_limit():
+    assert lid_pcf_limit(PCF(2*n+1, n**2)) == 4 / sp.pi
+
+
 def test_identify_pcf_limit():
     assert str(identify_pcf_limit(PCF(2*n + 1, n**2))) == '4/pi'
     assert str(identify_pcf_limit(PCF(3*n + 1, -2*n**2 + n))) == '2/pi'
