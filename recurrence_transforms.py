@@ -26,7 +26,7 @@ n = symbols('n')
 def clean_repr(s: str):
     if 'CobTransform' in s and s != 'CobTransform':
         return s.replace('CobTransform', '')
-    if 'Transform' in s and s not in ['RecurrenceTransform', 'CobTransform']:
+    if 'Transform' in s and s != 'RecurrenceTransform' and s != 'CobTransform': # s not in ['RecurrenceTransform', 'CobTransform']:
         return s.replace('Transform', '')
     return s
 
@@ -34,11 +34,20 @@ def clean_repr(s: str):
 class RecurrenceTransform():
     r"""
     A class for keeping track of transformations applied to recursion matrices.
+    Supports applying the transformations to a matrix and composing them.
+    Also supports transforming the limit of a recurrence given a sequence of transformations.
     """
     def __init__(self, transforms: list, symbol: sp.Symbol = n):
-        self.transforms = transforms
+        newtransforms = []
+        for t in transforms:
+            if t.__class__.__name__ == 'RecurrenceTransform':
+                newtransforms.extend(t.transforms)
+            else:
+                newtransforms.append(t)
+        self.transforms = newtransforms
         self.symbol = symbol
 
+    # TODO: fix this, is not working as intended for compositions.
     def __repr__(self):
         rep = ' , '.join([clean_repr(t.__repr__()) for t in self.transforms])
         return f'{clean_repr(self.__class__.__name__)}(transforms : {rep})'
@@ -49,6 +58,11 @@ class RecurrenceTransform():
             matrix = t(matrix).applyfunc(sp.simplify) # TODO: can we do without sp.simplify?
         return matrix
     
+    # TODO: debug, understand whether there is merit in transforming an entire transformation
+    # i thought that if botht the source recurrence and transformation are shifted by the same value,
+    # then the transformation should act on the shifted recurrence in a way that simply shifts the result
+    # but this does not seem to be the case. Where does this fail?
+    # check out pcf_matching4.ipynb for an example: The resulting matrix is not polynomial but rational.
     def shift(self, value):
         return RecurrenceTransform([t.shift(value) if hasattr(t, 'shift')
                                     and callable(getattr(t, 'shift')) else t for t in self.transforms],
@@ -58,6 +72,23 @@ class RecurrenceTransform():
         return RecurrenceTransform([t.reduce_transforms() if hasattr(t, 'reduce_transforms')
                                     and callable(getattr(t, 'reduce_transforms')) else t for t in self.transforms],
                                     symbol=self.symbol)
+    
+    def expand_transforms(self):
+        expanded_transforms = []
+        for t in self.transforms:
+            if len(t.transforms) == 1:
+                expanded_transforms.append(t)
+            elif hasattr(t, 'expand_transforms') and callable(getattr(t, 'expand_transforms')):
+                # currently only RecurrenceTransform has this method, so CobTransforms are left as is
+                # I think it is best to leave it this way, meaning not implement expand_transforms in CobTransform,
+                # or change the above condition to explicitly operate on RecurrenceTransforms,
+                # otherwise the expanded list may become cumbersome
+                expanded_transforms.extend(t.expand_transforms())
+            else:
+                expanded_transforms.append(t)  # Add the transform as is
+
+        return expanded_transforms
+
 
     @staticmethod
     def static_compose(t1, t2, t1_before_t2=True):
@@ -69,11 +100,32 @@ class RecurrenceTransform():
     def compose(self, other, self_before_other=True):
         return RecurrenceTransform.static_compose(self, other, t1_before_t2=self_before_other)
     
-    def transform_limit(self, limit):
-        r"""Apply the transformation to the limit (of a recurrence)."""
-        for t in self.transforms:
-            limit = t.transform_limit(limit).simplify()
-        return limit
+    def transform_limit(self, limit, return_list=False, expand_to_basic=True):
+        r"""
+        Apply the transformation to the limit (of a recurrence).
+        
+        Args:
+            * limit: The limit to transform.
+            * return_list: Whether to return a list of limits at each step.
+            * expand_to_basic: Whether to expand the transform into its most basic components,
+                when returning a list. If False, returns the limits at self.transforms
+                (instead of self.expand_transforms()).
+        
+        Returns:
+            The transformed limit or a list of the limit value at different stages of the transformation.
+        """
+        if return_list:
+            limit_list = [limit]
+            iterator = self.expand_transforms() if expand_to_basic else self.transforms
+            for t in iterator:
+                limit = t.transform_limit(limit).simplify()
+                limit_list.append(limit)
+            result = limit_list
+        else:
+            for t in self.transforms:
+                limit = t.transform_limit(limit).simplify()
+            result = limit
+        return result
         
 
 class FoldToPCFTransform(RecurrenceTransform):
@@ -147,6 +199,7 @@ class FoldTransform():
     def __init__(self, factor: int, symbol: sp.Symbol = n):
         self.factor = factor
         self.symbol = symbol
+        self.transforms = [self]
 
     def __repr__(self):
         return f'{clean_repr(self.__class__.__name__)}(factor : {self.factor})'
@@ -250,7 +303,7 @@ class CobTransform():
         return CobTransform.static_compose(self, CobTransform.static_compose_list(t_list))
     
     def transform_limit(self, limit):
-        return mobius(self.U.inv().subs({self.symbol: 1}), limit)
+        return mobius(self.U.subs({self.symbol: 1}).inv(), limit).simplify() # TODO: can we do without simplify?
 
 
 class CobTransformMultiply(CobTransform):
