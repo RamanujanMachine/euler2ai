@@ -14,7 +14,7 @@ def mobius(matrix, z=0):
     return (a * z + b) / (c * z + d)
 
 
-def inflate_to_polynomial(pcf: PCF):
+def inflate_to_polynomial(pcf: PCF, defalte_all=True):
     r"""
     Converts a rational pcf to a polynomial pcf:
     Inflates the pcf by lcm of denominators of a_n and b_n.
@@ -25,9 +25,11 @@ def inflate_to_polynomial(pcf: PCF):
         * the total factor by which the pcf was inflated
     """
     lcm = sp.lcm(pcf.a_n.as_numer_denom()[1], pcf.b_n.as_numer_denom()[1])
-    pcf = pcf.inflate(lcm)
-    deflater = content(pcf.a_n, pcf.b_n, [n])
-    pcf = pcf.deflate(deflater)
+    pcf = pcf.inflate(lcm).simplify()
+    deflater = sp.Integer(1)
+    if defalte_all:
+        deflater = content(pcf.a_n, pcf.b_n, [n])
+        pcf = pcf.deflate(deflater)
     return pcf, sp.simplify(lcm / deflater)
 
 
@@ -51,6 +53,7 @@ def as_pcf(matrix, deflate_all=True):
     a, b, c, d = [cell for cell in matrix]
     pcf = PCF(sp.expand(c * a.subs({n: n + 1}) + d * c.subs({n: n + 1})),
               sp.expand((b * c - a * d) * c.subs({n: n - 1}) * c.subs({n: n + 1})))
+    pcf = inflate_to_polynomial(pcf, defalte_all=deflate_all)[0]
     if deflate_all:
         pcf = pcf.deflate_all()
     return pcf
@@ -60,7 +63,7 @@ def as_pcf_cob(matrix, deflate_all=True):
     r"""
     matrix * coboundary $\propto$ coboundary * pcf
     """
-    a, b, c, d = [cell for cell in matrix]
+    a, _, c, _ = [cell for cell in matrix]
     eta = as_pcf_eta(matrix, deflate_all=deflate_all)
     return Matrix([[1, a], [0, c]]) * Matrix([[sp.sympify(eta).subs({n: n - 1}), 0], [0, 1]]) \
         * Matrix([[1, 0], [0, c.subs({n: n - 1})]])
@@ -74,7 +77,7 @@ def as_pcf_eta(matrix, deflate_all=True):
         pcf = as_pcf(matrix, deflate_all=False)
         eta = content(pcf.a_n, pcf.b_n, [n])
     else:
-        eta = sp.sympify(1)
+        eta = sp.Integer(1)
     return eta
 
 
@@ -86,21 +89,34 @@ def as_pcf_polys(matrix, deflate_all=True):
     return matrix[1, 0].subs({n: n - 1}), as_pcf_eta(matrix, deflate_all=deflate_all)
 
 
+class SingularCoboundaryMatrixError(Exception):
+    pass
+
+
 # TODO: write a test for this
 def fold_pcf(pcf, factor, symbol=n):
     foldedmat = fold_matrix(pcf.M(), factor, symbol=symbol)
     foldedpcf = as_pcf(foldedmat)
+    # making sure the coboundary matrix is not singular at 1
+    # so the new limit is easily computable from the old limit
+    # NOTE: on second thought, left this to the recurrence transform
+    # class - recurrence_transforms.FoldToPCFTransform
+    # U = as_pcf_cob(foldedmat)
+    # if U.subs({n: 1}).det() == 0:
+    #     raise NotFoldableError('The PCF is not foldable.')
     return foldedpcf
 
 
-def get_folded_pcf_limit(pcf, factor, limit, symbol = n, deflate_all=True):
-  """
-    folded * U(n+1) = U(n) * foldedpcf
-  """
-  foldedmat = fold_matrix(pcf.M(), factor, symbol=symbol)
-  foldedpcf = as_pcf(foldedmat, deflate_all=deflate_all)
-  U = as_pcf_cob(foldedmat, deflate_all=deflate_all)
-  return mobius(foldedpcf.A() * U.subs({n: 1}).inv() * pcf.A().inv(), limit)
+def get_folded_pcf_limit(pcf, factor, limit, symbol=n, deflate_all=True):
+    """
+        folded * U(n+1) = U(n) * foldedpcf
+    """
+    foldedmat = fold_matrix(pcf.M(), factor, symbol=symbol)
+    foldedpcf = as_pcf(foldedmat, deflate_all=deflate_all)
+    U = as_pcf_cob(foldedmat, deflate_all=deflate_all)
+    if U.subs({n: 1}).det() == 0:
+        raise SingularCoboundaryMatrixError('Cannot calculate the new limit: The as_pcf coboundary matrix is singular at n=1.')
+    return mobius(foldedpcf.A() * U.subs({n: 1}).inv() * pcf.A().inv(), limit)
 
 
 # shift pcf
@@ -136,9 +152,8 @@ def shift_to_viable(pcf: PCF):
 # normalize pcf
 def normalize_pcf(pcf: PCF, verbose=False):
     newpcf, inflator = inflate_to_polynomial(pcf)
-    newpcf, shift = shift_to_viable(pcf)
-    if newpcf != pcf:
-        if verbose:
-            print('Inflated by', inflator)
-            print('Shifted by', shift)
+    newpcf, shift = shift_to_viable(newpcf)
+    if verbose and newpcf != pcf:
+        print('Inflated by', inflator)
+        print('Shifted by', shift)
     return newpcf, inflator, shift
