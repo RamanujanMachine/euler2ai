@@ -63,10 +63,1843 @@ ExportToPCF[
 *)
 
 
+(*
+ClearAll[n];
+
+(* 57 from 200000-349999 *)
+s[k_] := 1/(k^2 + 1);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_200000-349999/recurrence__57__2106.13905__document.tex__1071.json",
+	-oo,
+	200,
+	"series"
+];
+
+ClearAll[n];
+*)
+
+
+(* ::Text:: *)
+(*350000 - 421640*)
+
+
+(* 0 *)
+s[n_] := (-1/8)^n * Pochhammer[1, n]^3 / (Pochhammer[1/2, n]^3 * n^3) * (3*n - 1);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__0__2312.14051__article.tex__679.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 1 *)
+s[n_] := (-1/8)^n * Pochhammer[1, n]^3 / Pochhammer[1/2, n]^3 * (2*(3*n - 1)*(Harmonic[2*n - 1] - Harmonic[n - 1]) - 1) / n^3;
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__1__2312.14051__article.tex__679.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 2 *)
+s[k_] := chi[-4, k] / k * Sech[Pi * k / 2];
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__2__2312.15501__Ramanujan_odd_zeta_survey.tex__588.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 3 *)
+s[n_] := (-1)^n / (2 n + 1);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__3__2312.17402__chapter7_2.tex__278.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 4 *)
+s[k_] := 1/(2^(8 k)) * Factorial[4 k] / (Factorial[k]^4) * (1103 + 26390 k) / (99^(4 k + 2));
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__4__2401.05419__ArxivV2.tex__38.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 5 *)
+s[k_] := 4 k^2 / (4 k^2 - 1);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__5__2401.06353__Riemann_zeta_functions_for_Krull_monoids.tex__786.json",
+	1,
+	200,
+	"product"
+];
+
+ClearAll[n];
+
+(* 6 *)
+s[k_] := 1/2^(4 k) * (4/(8 k + 1) - 2/(8 k + 4) - 1/(8 k + 5) - 1/(8 k + 6));
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__6__2401.08997__fastzeta_v4.tex__478.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 7 *)
+s[k_] := 1 + 1/(4 k (k - 1));
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__7__2401.10734__FraIchKarRas-24.tex__1083.json",
+	4,
+	200,
+	"product"
+];
+
+ClearAll[n];
+
+(* 8 *)
+s[k_] := (25 k - 3) / (2^k * Binomial[3 k, k]);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__8__2401.12083__SunZhou1.tex__227.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 9 *)
+s[k_] := 1 / (k^2 * 2^k * Binomial[3*k, k]);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__9__2401.12083__SunZhou1.tex__397.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 10 *)
+s[k_] := (350 k - 17) * Binomial[2 k, k] * 8^k / (Binomial[3 k, k] * Binomial[6 k, 3 k]);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__10__2401.14197__SunZhou2.tex__424.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 11 *)
+s[k_] := (50 k - 7) * Binomial[2 k, k] * 8^k / (k * Binomial[3 k, k] * Binomial[6 k, 3 k]);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__11__2401.14197__SunZhou2.tex__431.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 12 *)
+s[k_] := (50 k - 7) Binomial[2 k, k] 8^k / (k Binomial[3 k, k] Binomial[6 k, 3 k]);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__12__2401.14197__SunZhou2.tex__570.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 13 *)
+s[k_] := 2*((350*k - 17)*Binomial[2*k, k]*8^k)/(Binomial[3*k, k]*Binomial[6*k, 3*k]) - 7*((100*k^2 - 112*k + 15)*Binomial[2*k, k]*8^k)/(k*Binomial[3*k, k]*Binomial[6*k, 3*k]);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__13__2401.14197__SunZhou2.tex__570.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 14 *)
+s[k_] := (50 k - 7) Binomial[2 k, k] 8^k / (k Binomial[3 k, k] Binomial[6 k, 3 k]) - (100 k^2 - 104 k + 15) Binomial[2 k, k] 8^k / (k (2 k - 1) Binomial[3 k, k] Binomial[6 k, 3 k]);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__14__2401.14197__SunZhou2.tex__584.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 15 *)
+s[k_] := (5 k - 1) Binomial[2 k, k] 8^k / (k (2 k - 1) Binomial[3 k, k] Binomial[6 k, 3 k]);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__15__2401.14197__SunZhou2.tex__584.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 16 *)
+s[k_] := Binomial[2 k, k] * 2^(3 k) / ((2 k - 1) * Binomial[3 k, k] * Binomial[6 k, 3 k]);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__16__2401.14197__SunZhou2.tex__651.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 17 *)
+s[k_] := (3 k + 1) * BellB[k] / ((-32)^k);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__17__2401.15887__Rational_summability_of_holonomic_sequences.tex__573.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 18 *)
+s[k_] := (5729 + 8701 k + 5895 k^2 + 1879 k^3 + 228 k^4) * Domb[k] / ((k + 1)^2 * (k + 2)^2 * (k + 3)^2 * (-32)^k);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__18__2401.15887__Rational_summability_of_holonomic_sequences.tex__582.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 19 *)
+s[k_] := (2 k/(2 k - 1))*(2 k/(2 k + 1));
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__19__2402.08144__arx_apx_Nodd_5.tex__25.json",
+	1,
+	200,
+	"product"
+];
+
+ClearAll[n];
+
+(* 20 *)
+s[k_] := rf[1/6, k] * rf[1/2, k] * rf[5/6, k] / (Factorial[k]^3) * (-1/53360)^(3*k);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__20__2402.08485__HeegnerV126.tex__242.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 21 *)
+s[m_] := (1/2)^m / ((m + 1/2) (Factorial[m + 1]));
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__21__2403.02851__main.tex__822.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 22 *)
+s[n_] := Pochhammer[1/6, n] * Pochhammer[1/2, n] * Pochhammer[5/6, n] / (Pochhammer[1, n]^3) * (-1/53360)^(3*n) * (13591409/6 + 90856689*n);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__22__2403.07291__FasterChudnovskyV104.tex__54.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 23 *)
+s[n_] := (-1)^(n - 1) * 9^n / n^2 / Binomial[4*n, 2*n];
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__23__2404.05770__Arxiv_KA_RF_TG_Some_C4n,2n_series_20240407_final.tex__146.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 24 *)
+s[n_] := (-1)^(n - 1) * 9^n / Binomial[4*n, 2*n];
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__24__2404.05770__Arxiv_KA_RF_TG_Some_C4n,2n_series_20240407_final.tex__150.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 25 *)
+s[n_] := (-1)^(n - 1) / (n^2 * 3^n * Binomial[4 n, 2 n]);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__25__2404.05770__Arxiv_KA_RF_TG_Some_C4n,2n_series_20240407_final.tex__155.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 26 *)
+s[n_] := 16^n / (n^2 * Binomial[4*n, 2*n]);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__26__2404.05770__Arxiv_KA_RF_TG_Some_C4n,2n_series_20240407_final.tex__230.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 27 *)
+s[n_] := (-1)^n / (2 n + 1);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__27__2404.15210__HiroseMatsusakaSeki_arXiv.tex__196.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 28 *)
+s[n_] := (-1)^(n - 1) / (2 n - 1);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__28__2405.11134__MadhavaCorrectionTermsARXIV.tex__64.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 29 *)
+s[n_] := (-1)^(n - 1) / (2 n - 1);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__29__2405.11134__MadhavaCorrectionTermsARXIV.tex__602.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 30 *)
+s[n_] := (-1)^n / (2 n + 1);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__30__2405.11134__MadhavaCorrectionTermsARXIV.tex__627.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 31 *)
+s[n_] := (-1)^(n/2) / (n^3 - n);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__31__2405.11134__MadhavaCorrectionTermsARXIV.tex__733.json",
+	3,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 32 *)
+s[n_] := (-1)^((n - 1)/2) * 4 / (n^5 + 4*n);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__32__2405.11134__MadhavaCorrectionTermsARXIV.tex__760.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 33 *)
+s[n_] := 36 * (-1)^n / (((2*n + 1)^3 - (2*n + 1)) * ((2*n)^2 + 5) * ((2*n + 2)^2 + 5));
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__33__2405.11134__MadhavaCorrectionTermsARXIV.tex__800.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 34 *)
+s[k_] := 1/((4 k - 2)^2 - 1);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__34__2405.11134__MadhavaCorrectionTermsARXIV.tex__859.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 35 *)
+s[k_] := 1/((4 k - 2)^2 - 1);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__35__2405.11134__MadhavaCorrectionTermsARXIV.tex__867.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 36 *)
+s[k_] := 2 / ((4 k - 3) * (4 k - 1));
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__36__2405.11134__MadhavaCorrectionTermsARXIV.tex__867.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 37 *)
+s[n_] := (-1)^n / (2 n + 1);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__37__2405.11134__MadhavaCorrectionTermsARXIV.tex__867.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 38 *)
+s[n_] := (-1)^n / (2 n + 1);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__38__2405.11134__MadhavaCorrectionTermsARXIV.tex__867.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 39 *)
+s[k_] := 1 / ((2*(2*k)^2 - 1)^2 - (2*k)^2);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__39__2405.11134__MadhavaCorrectionTermsARXIV.tex__906.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 40 *)
+s[k_] := 1/k^2;
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__40__2405.12248__2024051903.tex__69.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 41 *)
+s[k_] := 1/k^2;
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__41__2405.12248__2024051903.tex__105.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 42 *)
+s[n_] := 1/n^6;
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__42__2405.12248__2024051903.tex__108.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 43 *)
+s[n_] := 1/n^14;
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__43__2405.12248__2024051903.tex__114.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 44 *)
+s[k_] := 1/k^2;
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__44__2405.12248__2024051903.tex__129.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 45 *)
+s[n_] := 1/n^6;
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__45__2405.12248__2024051903.tex__134.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 46 *)
+s[n_] := (-1)^(n - 1) / (2 n - 1);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__46__2405.12248__2024051903.tex__145.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 47 *)
+s[n_] := (-1)^(n - 1) / (2 n - 1)^3;
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__47__2405.12248__2024051903.tex__146.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 48 *)
+s[n_] := (-1)^(n - 1) / (2 n - 1)^7;
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__48__2405.12248__2024051903.tex__149.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 49 *)
+s[n_] := (-1)^(n - 1) / (2 n - 1)^11;
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__49__2405.12248__2024051903.tex__152.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 50 *)
+s[n_] := (-1)^(n - 1) / (2 n - 1)^15;
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__50__2405.12248__2024051903.tex__155.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 51 *)
+s[n_] := (-1)^(n - 1) / (2 n - 1)^19;
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__51__2405.12248__2024051903.tex__158.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 52 *)
+s[n_] := (-1)^(n - 1) / (2 n - 1)^7;
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__52__2405.12248__2024051903.tex__170.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 53 *)
+s[k_] := k / (4^k * (2*k - 1)^2 * (2*k + 1) * (2*k + 3)) * Binomial[2*k, k];
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__53__2405.16814__Present_work.tex__305.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 54 *)
+s[k_] := (-1)^(2 k + 3) k / (4^k * (2 k - 1)^2 * (2 k + 1) * (2 k + 3)) * Binomial[2 k, k];
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__54__2405.16814__Present_work.tex__308.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 55 *)
+s[k_] := k^2 / (4^k * (2*k - 1)^2 * (2*k + 1)) * Binomial[2*k, k];
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__55__2405.16814__Present_work.tex__312.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 56 *)
+s[k, l_] := (-1)^k * (-1)^l * (4 * Pi)^(2 * l) / Factorial[2 * l] * Sum[(-1)^s * Binomial[2 * l, s] * Binomial[s/2, l + k], {s, 0, 2 * l}];
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__56__2405.19441__asympinvdeltaarxiv.tex__429.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 57 *)
+s[n_] := (1/4)^n * HypergeometricPFQ[{1/2, 1/2, 1/2}, {1, 1, 1}, 1];
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__57__2407.00621__qGuilleraV59.tex__67.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 58 *)
+s[k_] := (3 k + 2) * 1^k^4 / (1^(k + 1/2)^2 * 1^(2*k + 1));
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__58__2407.00621__qGuilleraV59.tex__212.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 59 *)
+s[k_] := 1/(4*k + 1) - 1/(4*k + 3);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__59__2407.19885__Euler_product_expansion.tex__226.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 60 *)
+s[k_] := 1/(4*k + 1) - 1/(4*k + 3);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__60__2407.19885__Euler_product_expansion.tex__230.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 61 *)
+s[n_] := (-1)^(n + 1) / (2 n + 1);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__61__2407.19885__Euler_product_expansion.tex__234.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 62 *)
+s[n_] := (-1)^(n + 1) * (4/(2*n + 3) + 5/(2*n + 5));
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__62__2407.19885__Euler_product_expansion.tex__234.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 63 *)
+s[k_] := 1/(4*k + 1) - 1/(4*k + 3);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__63__2407.19885__Euler_product_expansion.tex__289.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 64 *)
+s[k_] := (1 - 1/(2*k + 1)^2)^(-1);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__64__2407.20584__main.tex__606.json",
+	1,
+	200,
+	"product"
+];
+
+ClearAll[n];
+
+(* 65 *)
+s[n_] := (-1)^n / (2 n + 1);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__65__2408.12096__MadhavaAnUpdatedBiography.tex__300.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 66 *)
+s[k_] := (-1)^k / (2 k + 1);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__66__2409.06658__partial-fractions-2.5.tex__135.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 67 *)
+s[k_] := 1/(2 k + 1) * (1/(1 - 2 I))^(2 k + 1) - 1/(2 k + 1) * (1/(1 + 2 I))^(2 k + 1);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__67__2409.10097__2024-09-17_BBPbase5.tex__76.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 68 *)
+s[k_] := Binomial[2 k, k]^3 * (k + 5/42) / 2^(12 k);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__68__2410.19289__van_Heoij,_Tsai_and_Ye,_pi_paper_v2.tex__114.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 69 *)
+s[n_] := Binomial[2 n, n] * (Sum[Binomial[2 k, k]^2 * Binomial[2 (n - k), n - k] * (9/4)^(n - k), {k, 0, n}] * (n + 1/12) * (1/100)^n);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__69__2410.19289__van_Heoij,_Tsai_and_Ye,_pi_paper_v2.tex__124.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 70 *)
+s[n_] := 2^n / (n + 1) * Product[(2*j - 1)/(4*j + 1), {j, 1, n}];
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__70__2410.22343__arxiv_KA_RF_Series-associated-with-a-forgotten-identity-of-Norlund_20241012.tex__203.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 71 *)
+s[k_] := Binomial[2 k, k]^3 / 64^k;
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__71__2410.22486__Multifold.tex__468.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 72 *)
+s[k_] := 1/(16 k^2 - 1);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_350000-421640/recurrence__72__2411.00280__main.tex__98.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+
+
+
+(* ::Text:: *)
+(*154048-199999*)
+
+
+(*
+(* 0 *)
+s[m_] := 1/16^m * (4/(8*m + 1) - 2/(8*m + 4) - 1/(8*m + 5) - 1/(8*m + 6));
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__0__1910.04328__The_MC_Algorithm_and_its_applications-2019-10-10.tex__92.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 1 *)
+s[k_] := (6 k + 1) * (1/2)^3 / (Factorial[k]^3 * 4^k);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__1__1910.07551__qC3-3.tex__78.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 2 *)
+s[k_] := 1/(2^(6 k)) * Binomial[2 k, k]^3;
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__2__1910.10932__qH2.tex__64.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 3 *)
+s[n_] := (3 n + 1) / ((-100)^n) * Sum[Binomial[n, k]^2 * T[k, 1, 25] * T[n - k, 1, 25], {k, 0, n} ];
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__3__1911.05456__207e.tex__133.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 4 *)
+s[k_] := (34 k^2 - 3 k - 1) * Binomial[2 k, k]^2 * Binomial[3 k, k] / ((2 k - 1) * (3 k - 1) * (-192)^k);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__4__1911.05456__207e.tex__242.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 5 *)
+s[k_] := (42 k^2 - 3 k - 1) * Binomial[2 k, k]^3 / ((2 k - 1)^3 * 4096^k);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__5__1911.05456__207e.tex__242.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 6 *)
+s[k_] := (28 k^2 - 4 k - 1) * Binomial[2 k, k]^3 / ((2 k - 1)^2 * (-512)^k);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__6__1911.05456__207e.tex__242.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 7 *)
+s[k_] := (12 k^2 - 1) * Binomial[2 k, k]^3 / ((2 k - 1)^2 * 256^k);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__7__1911.05456__207e.tex__242.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 8 *)
+s[k_] := (4*k - 1) * Binomial[2*k, k]^3 / ((2*k - 1)^3 * (-64)^k);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__8__1911.05456__207e.tex__242.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 9 *)
+s[k_] := k*(4*k - 1)*Binomial[2*k, k]^3 / ((2*k - 1)^2*(-64)^k);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__9__1911.05456__207e.tex__242.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 10 *)
+s[k_] := (1524 k^2 + 899 k + 263) * Binomial[2 k, k]^2 * Binomial[3 k, k] / ((k + 1) * (2 k - 1) * (3 k - 1) * 1458^k);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__10__1911.05456__207e.tex__261.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 11 *)
+s[k_] := (522 k^2 - 55 k - 13) * Binomial[2 k, k]^2 * Binomial[3 k, k] / ((2 k - 1) * (3 k - 1) * (-8640)^k);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__11__1911.05456__207e.tex__261.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 12 *)
+s[k_] := ((40 k^2 - 2 k - 1) * Binomial[2 k, k]^2 * Binomial[4 k, 2 k]) / ((2 k - 1) * (4 k - 1) * (-1024)^k);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__12__1911.05456__207e.tex__261.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 13 *)
+s[k_] := (1903 k^2 + 114 k + 41) * Binomial[2 k, k]^2 * Binomial[4 k, 2 k] / ((k + 1) * (2 k - 1) * (4 k - 1) * 648^k);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__13__1911.05456__207e.tex__261.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 14 *)
+s[k_] := (8 k^2 - 2 k - 1) * Binomial[2 k, k]^2 * Binomial[4 k, 2 k] / ((k + 1) * (2 k - 1) * (4 k - 1) * (-1024)^k);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__14__1911.05456__207e.tex__261.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 15 *)
+s[k_] := (71312 k^2 - 7746 k - 887) * Binomial[2 k, k]^2 * Binomial[4 k, 2 k] / ((2 k - 1) * (4 k - 1) * 1584^(2 k));
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__15__1911.05456__207e.tex__280.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 16 *)
+s[k_] := (1424799848 k^2 + 1533506502 k + 108685699) * Binomial[2 k, k]^2 * Binomial[4 k, 2 k] / ((k + 1) * (2 k - 1) * (4 k - 1) * (-2^10 * 21^4)^k);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__16__1911.05456__207e.tex__280.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 17 *)
+s[k_] := (7408 k^2 - 754 k - 103) * Binomial[2 k, k]^2 * Binomial[4 k, 2 k] / ((2 k - 1) * (4 k - 1) * 28^(4 k));
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__17__1911.05456__207e.tex__280.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 18 *)
+s[k_] := (3224 k^2 + 4026 k + 637) * Binomial[2 k, k]^2 * Binomial[4 k, 2 k] / ((k + 1) * (2 k - 1) * (4 k - 1) * (-2^10 * 3^4)^k);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__18__1911.05456__207e.tex__280.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 19 *)
+s[k_] := (208 k^2 + 66 k + 23) * Binomial[2 k, k]^2 * Binomial[4 k, 2 k] / ((k + 1) * (2 k - 1) * (4 k - 1) * 48^(2 k));
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__19__1911.05456__207e.tex__280.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 20 *)
+s[k_] := (50678512 k^2 + 56405238 k + 5793581) * Binomial[2 k, k]^2 * Binomial[4 k, 2 k] / ((k + 1) * (2 k - 1) * (4 k - 1) * 1584^(2 k));
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__20__1911.05456__207e.tex__298.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 21 *)
+s[k_] := (2140459883152 k^2 + 2259867244398 k + 119407598201) * Binomial[2 k, k]^2 * Binomial[4 k, 2 k] / ((k + 1) * (2 k - 1) * (4 k - 1) * 396^(4 k));
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__21__1911.05456__207e.tex__302.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 22 *)
+s[k_] := (164 k^2 - k - 3) * Binomial[2 k, k] * Binomial[3 k, k] * Binomial[6 k, 3 k] / ((2 k - 1) * (6 k - 1) * 20^(3 k));
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__22__1911.05456__207e.tex__306.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 23 *)
+s[k_] := (3471628 k^2 + 3900088 k + 418289) * Binomial[2 k, k] * Binomial[3 k, k] * Binomial[6 k, 3 k] / ((k + 1) * (2 k - 1) * (6 k - 1) * (-3 * 160^3)^k);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__23__1911.05456__207e.tex__327.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 24 *)
+s[k_] := (101740699836 k^2 + 107483900696 k + 5743181813) * Binomial[2 k, k] * Binomial[3 k, k] * Binomial[6 k, 3 k] / ((k + 1) * (2 k - 1) * (6 k - 1) * (-5280)^(3 k));
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__24__1911.05456__207e.tex__335.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 25 *)
+s[k_] := (16444841148 k^2 - 1709536232 k - 53241371) * Binomial[2 k, k] * Binomial[3 k, k] * Binomial[6 k, 3 k] / ((2 k - 1) * (6 k - 1) * (-640320)^(3 k));
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__25__1911.05456__207e.tex__341.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 26 *)
+s[k_] := (56 k^2 + 118 k + 61) * Binomial[2 k, k]^3 / ((k + 1)^2 * 4096^k);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__26__1911.05456__207e.tex__379.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 27 *)
+s[k_] := (420 k^2 + 992 k + 551) * Binomial[2 k, k]^3 / ((k + 1)^2 * (2 k - 1) * 4096^k);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__27__1911.05456__207e.tex__380.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 28 *)
+s[k_] := (4 k + 1) * Binomial[2 k, k]^3 / (-64)^k;
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__28__1911.05456__207e.tex__596.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 29 *)
+s[k_] := k*(4*k - 1)*Binomial[2*k, k]^3 / ((2*k - 1)^2*(-64)^k);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__29__1911.05456__207e.tex__598.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 30 *)
+s[k_] := (16444841148 k^2 - 1709536232 k - 53241371) Binomial[2 k, k] Binomial[3 k, k] Binomial[6 k, 3 k] / ((2 k - 1) (6 k - 1) (-640320)^(3 k));
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__30__1911.05456__207e.tex__624.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 31 *)
+s[k_] := (3 k + 1) / ((-20)^k * Factorial[k]);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__31__1911.05456__207e.tex__2332.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 32 *)
+s[k_] := (-1)^k * (4*k + 1) * (1/2)^(k^3) / Factorial[k]^3;
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__32__1911.09497__1911.09497.tex__119.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 33 *)
+s[n_] := (Pochhammer[1/2, n]^2 / Factorial[n]^2) * Sum[1/(k*(k - 1/2)), {k, n + 1, Infinity}];
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__33__1911.11505__MHSnote.tex__218.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 34 *)
+s[p_] := 1/(1 + 1/p) * 1/(1 - 1/p);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__34__1911.12551__20191127RatlPtOnRatlCurve.tex__406.json",
+	isprime(p),
+	200,
+	"product"
+];
+
+ClearAll[n];
+
+(* 35 *)
+s[p_] := 1/(1 - 1/p) * 1/(1 + 1/p);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__35__1911.12551__20191127RatlPtOnRatlCurve.tex__413.json",
+	1,
+	200,
+	"product"
+];
+
+ClearAll[n];
+
+(* 36 *)
+s[k_] := (-1)^k / (2 k + 1);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__36__1911.12551__20191127RatlPtOnRatlCurve.tex__447.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 37 *)
+s[n_] := 4^(n - 1) / (n^3 * Binomial[2*n, n]);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__37__1912.00140__Periods_conjecture.tex__345.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 38 *)
+s[n_] := 4^(n - 1) / (n^2 * Binomial[2 n, n]);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__38__1912.00140__Periods_conjecture.tex__436.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 39 *)
+s[n_] := (1/2) * ((-1)^(n + 1) * Binomial[2*n, n] / (4^n * n^4)) * (4 + 2*n * (HarmonicNumber[n - 1] - HarmonicNumber[2*n - 1]));
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__39__1912.00140__Periods_conjecture.tex__468.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 40 *)
+s[n_] := (-1)^(n - 1) / (n^4 * Binomial[2 n, n]) * 4^(n - 1);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__40__1912.00140__Periods_conjecture.tex__468.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 41 *)
+s[n_] := 4^(n - 1) / (n^4 * Binomial[2 n, n]);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__41__1912.00140__Periods_conjecture.tex__479.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 42 *)
+s[n_] := (-1)^(n - 1) / (n^5 * Binomial[2 n, n]) * 4^(n - 1);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__42__1912.00140__Periods_conjecture.tex__515.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 43 *)
+s[k_] := (-1)^k * Binomial[2*k, k] / (4^k * k^5) * (5 + 2*k * (HarmonicNumber[k - 1] - HarmonicNumber[2*k - 1]));
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__43__1912.00140__Periods_conjecture.tex__515.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 44 *)
+s[k_] := Binomial[2 k, k] / (4^k * k^4);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__44__1912.00140__Periods_conjecture.tex__526.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 45 *)
+s[n_] := 4^(n - 1) / (n^5 * Binomial[2*n, n]);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__45__1912.00140__Periods_conjecture.tex__526.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 46 *)
+s[n_] := 4^(n - 1) / (n^6 * Binomial[2*n, n]);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__46__1912.00140__Periods_conjecture.tex__583.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 47 *)
+s[k_] := Binomial[2 k, k] / (4^k * k^6);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__47__1912.00140__Periods_conjecture.tex__641.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 48 *)
+s[n_] := 4^(n - 1) / (n^7 * Binomial[2*n, n]);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__48__1912.00140__Periods_conjecture.tex__641.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 49 *)
+s[k_] := (6 k + 1) * (1/2)^3 / (Factorial[k]^3 * 4^k);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__49__1912.00765__qPar-mod4-1.tex__80.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 50 *)
+s[k_] := (-1)^(k + 1) / (2 k - 1);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__50__1912.03214__main.tex__167.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 51 *)
+s[k_] := (-1)^(k + 1) / (2 k (2 k + 1) (2 k + 2));
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__51__1912.03214__main.tex__172.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 52 *)
+s[k_] := (-1)^(k + 1) * (1/(6*k - 5) + 1/(6*k - 1));
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__52__1912.03214__main.tex__306.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 53 *)
+s[n_] := (-1)^n / (2 n + 1);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__53__1912.03527__eulersummform-arxiv.tex__117.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 54 *)
+s[n_] := Pochhammer[1/2, n] * Pochhammer[1/4, n] * Pochhammer[3/4, n] / Pochhammer[1, n]^3 * (7 n + 1) * (32/81)^n;
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__54__2001.08104__WZ-Rama-via-2F1-arx-02.tex__134.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 55 *)
+s[k_] := ((-1)^k * (1/2)^k^3 * (4*k + 1)) / (1^k^3);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__55__2001.08104__WZ-Rama-via-2F1-arx-02.tex__170.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 56 *)
+s[k_] := (1/2)^3 * (6 k + 1) * (1/4)^k;
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__56__2001.08104__WZ-Rama-via-2F1-arx-02.tex__188.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 57 *)
+s[n_] := Pochhammer[1/2, n] * Pochhammer[1/4, n] * Pochhammer[3/4, n] / Pochhammer[1, n]^3 * (20 n + 3) * (-1/4)^n;
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__57__2001.08104__WZ-Rama-via-2F1-arx-02.tex__228.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 58 *)
+s[n_] := 1/1 * (1/2)^n * (1/3)^n * (2/3)^n / (Factorial[n])^3 * (2/27)^n;
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__58__2001.08104__WZ-Rama-via-2F1-arx-02.tex__273.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 59 *)
+s[n_] := (Pochhammer[1/2, n] * Pochhammer[1/3, n] * Pochhammer[2/3, n] / Pochhammer[1, n]^3) * (15 n + 2) * (2/27)^n;
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__59__2001.08104__WZ-Rama-via-2F1-arx-02.tex__273.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 60 *)
+s[n_] := ((1/2)^n)^3 / (Factorial[n]^3) * (6*n + 1) * (1/4)^n;
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__60__2003.02572__bimodular-arxiv-v2.tex__89.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 61 *)
+s[k_] := ((1/2)^k)^2 / (Factorial[k]^2) * T[k, 34, 1] * (30*k + 7) * (-1/64)^k;
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__61__2003.02572__bimodular-arxiv-v2.tex__116.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 62 *)
+s[k_] := (3 k + 1) / 16^k * Binomial[2 k, k]^3;
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__62__2004.10526__qDiv-v2.tex__83.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 63 *)
+s[k_] := (2 k/(2 k + 1) (2 k + 2)/(2 k + 1))^2;
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__63__2006.04909__begaye__2_.tex__59.json",
+	1,
+	200,
+	"product"
+];
+
+ClearAll[n];
+
+(* 64 *)
+s[n_] := HarmonicNumber[n - 1] / n^3 * 4^(-n) * Binomial[2 n, n];
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__64__2007.03957__one-dim_polylog_int.tex__406.json",
+	2,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 65 *)
+s[n_] := 1/(n^4 * (4^(-n) * Binomial[2 n, n])^(-2));
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__65__2007.03957__one-dim_polylog_int.tex__516.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 66 *)
+s[m_] := (HarmonicNumber[2 m + 1] - 1/2 HarmonicNumber[m]) / (2 m (2 m + 1));
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__66__2008.02488__Aliev_Dil_Tornheim-like_series.tex__442.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 67 *)
+s[k_] := (3 k + 1) / ((-32)^k * Domb[k]);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__67__2008.02647__Domb.tex__65.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 68 *)
+s[k_] := (3 k + 1) / ((-32)^k * Domb[k]);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__68__2008.02647__Domb.tex__88.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 69 *)
+s[k_] := (4290 k + 367)/(3136^k) * Binomial[2 k, k] * T_k[14, 1] * T_k[17, 16];
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__69__2009.04379__228w.tex__127.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 70 *)
+s[k_] := (4290 k + 367) / (3136^k) * Binomial[2 k, k] * T_k[14, 1] * T_k[17, 16];
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__70__2009.04379__228w.tex__588.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 71 *)
+s[n_] := (182 n + 31)/576^n * Binomial[2 n, n] * Sum[Binomial[2 k, k]^2 * Binomial[2 (n - k), n - k]^2 / Binomial[n, k] * (-25/16)^k, {k, 0, n}];
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__71__2009.04379__228w.tex__759.json",
+	0,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 72 *)
+s[n_] := (-1)^n / (2 n - 1);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__72__2009.10774__ZEDFMTVs.tex__1255.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 73 *)
+s[k_] := 2^k / (k Binomial[2 k, k]);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__73__2010.05610__generalized_binomials_submission_arxiv.tex__549.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 74 *)
+s[i_] := (4 i^2)/(4 i^2 - 1);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__74__2010.07374__neurips_2020.tex__1446.json",
+	1,
+	200,
+	"product"
+];
+
+ClearAll[n];
+
+(* 75 *)
+s[k_] := (-1)^(k - 1) / (16^k * Binomial[2*k, k] * (2*k + 1)^2);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__75__2010.15424__koecher6.tex__972.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+(* 76 *)
+s[k_] := (-1)^k / (16^k * (2*k + 1)^2) * Binomial[2*k, k] * (1/(2*k + 1)^2 - 5/4 * Sum[1/(2*j + 1)^2, {j, 0, k - 1}]);
+ExportToPCF[
+	s,
+	"C:/Users/totos/Desktop/9 - arXiv_equations_as_recurrences/recurrences_154048-199999/recurrence__76__2010.15424__koecher6.tex__1147.json",
+	1,
+	200,
+	"series"
+];
+
+ClearAll[n];
+
+*)
+
+
 (* ::Text:: *)
 (*200000 - 349999*)
 
 
+(*
 (* 0 *)
 s[k_] := (6 k + 1) * (1/2)^3 / (Factorial[k]^3 * 4^k);
 ExportToPCF[
@@ -3787,7 +5620,7 @@ ExportToPCF[
 
 ClearAll[n];
 
-
+*)
 
 
 (* ::Text:: *)
