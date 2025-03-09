@@ -1,4 +1,4 @@
-from matrix_utils import matrix_denominator_lcm
+from .utils.matrix_utils import matrix_denominator_lcm
 import sympy as sp
 n = sp.symbols('n')
 

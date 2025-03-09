@@ -1,4 +1,4 @@
-from pcf import PCF
+from lib.pcf import PCF
 import sympy as sp
 
 

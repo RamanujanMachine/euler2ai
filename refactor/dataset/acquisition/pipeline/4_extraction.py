@@ -22,6 +22,7 @@ PRINT_EVERY = 100
 TEST = False
 TEST_TO = 10
 PRINT_SKIPS = True
+SAVE_MESSAGES = False
 
 
 def process_eq(eqdict):
@@ -33,7 +34,8 @@ def process_eq(eqdict):
     'c' (classification by GPT-4o mini)
     """
     start = time.time()
-    extraction = extract_formula(eqdict['e'], OPENAI_API_KEY, verbose=VERBOSE_EXTRACTION)
+    extraction = extract_formula(eqdict['e'], OPENAI_API_KEY,
+                                 save_messages=SAVE_MESSAGES, verbose=VERBOSE_EXTRACTION)
     elapsed = time.time() - start
     line = eqdict['l']
     del eqdict['l']

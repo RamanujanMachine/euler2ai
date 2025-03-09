@@ -1,6 +1,6 @@
-from LIReC_utils.pcf import PCF as LPCF
-from LIReC_utils.pcf import IllegalPCFException
-from matrix_utils import mobius
+from .utils.LIReC_utils.pcf import PCF as LPCF
+from .utils.LIReC_utils.pcf import IllegalPCFException
+from .utils.matrix_utils import mobius
 import mpmath as mm
 import gmpy2
 import sympy as sp

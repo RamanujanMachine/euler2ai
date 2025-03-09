@@ -112,7 +112,8 @@ class Variable(BaseModel):
 
 
 def extract_formula(latex_string, api_key, constant='pi',
-                    temperature=0, max_iters=3, max_tokens=None, verbose=True) -> dict:
+                    temperature=0, max_iters=3, max_tokens=None,
+                    save_messages=False, verbose=True) -> dict:
     """
     The model used for symbolic formula extraction is 'gpt-4o', compared with 'gpt-4o-mini'
     which is used otherwise throughout the pipeline. 'gpt-4o' is seemingly better at generalizing
@@ -120,6 +121,7 @@ def extract_formula(latex_string, api_key, constant='pi',
 
     Args:
         max_iters: maximum number of iterations allowed for GPT to correct itself.
+        save_messages: whether to save the messages exchanged with the model in the output dict.
     """
     client = openai.OpenAI(api_key=api_key)
 
@@ -342,12 +344,16 @@ def extract_formula(latex_string, api_key, constant='pi',
     token_counts = count_tokens_for_messages(messages)
     total_cost = estimate_cost(token_counts=token_counts)
 
-    return {
+    output= {
         'cost': total_cost,
         'type': formula_type,
         'info': formula_info,
         'is_proper_sympy': info_is_proper_sympy,
         'correction_cost': info_correction_cost,
-        'correction_iters': info_correction_iters,
-        'messages': messages
+        'correction_iters': info_correction_iters
         }
+    
+    if save_messages:
+        output['messages'] = messages
+
+    return output

@@ -1,5 +1,5 @@
 from .identify import identify, MPMATH_PI
-from pcf import PCF
+from lib.pcf import PCF
 
 
 def identification_loop(limit, precision, constants=[MPMATH_PI], max_iters=3, verbose=False):

@@ -1,6 +1,6 @@
 from .regular_expressions import clean_equation, remove_equation_wrapper, \
     split_equation_environment
-from gather_utils import apply_to_gather
+from refactor.dataset.acquisition.utils.gather_utils import apply_to_gather
 import re
 from typing import Union, Callable, Optional, Dict, List
 

@@ -1,4 +1,4 @@
-from gather_utils import apply_to_gather
+from ..utils.gather_utils import apply_to_gather
 from .gpt import classify_formula
 
 
