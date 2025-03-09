@@ -1,3 +1,6 @@
+![A Conservative Matrix Field (CMF) contains many celebrated formulas from the literature.](image.png)
+*A Conservative Matrix Field (CMF) contains many celebrated formulas from the literature.*
+
 # From Euler to AI: Unifying Formulas for Mathematical Constants
 
 This repository accompanies the research article "[From Euler to AI: Unifying Formulas for Mathematical Constants](https://arxiv.org/abs/2502.17533)".
