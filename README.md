@@ -41,4 +41,23 @@ To reproduce the results and explore the methodologies presented in the paper, f
 1. **Clone the repository**:
    ```bash
    git clone https://github.com/RamanujanMachine/unifying-formulas-for-math-constants.git
-   cd unifying-formulas-for-math-constants
+   cd unifying-formulas-for-math-constants  
+
+If you are not interested in testing the harvesting pipeline on papers different than the ones used in the paper, proceed to step 3.
+
+2. **Harvesting formulas**:  
+   Create a list of arXiv ids and run `arxiv_dataset_1_gather.py`.
+   Note that running `arxiv_dataset_1_gather.py` on thousands of papers may take a siginificant amount of time to ensure compliance with the arXiv API guidelines.  
+   Once raw equations have been collected, run the remaining components of the `arxiv_dataset` pipeline (numbered) in order. This results in a dataframme of formulas and their symbolic limits in terms of the constant of interest.  
+   
+   Step 9 generates Mathematica code that must be run using an environment containing RISC's `Guess` package, which can be downloaded here: [download Guess](https://www3.risc.jku.at/research/combinat/software/ergosum/installation.html#download).
+   
+   The end result is a dataframe containing formulas as polynomial continued fractions (PCFs), with their irrationality measures ($\delta$s) and convergence rates precomputed.
+   This dataframe contains representatives from a conservative matrix field (CMF) generated in step 12.  
+
+3. **Unification**:  
+   Using the resulting dataframe, or the one used for the results shown in the paper, `pcfs_dataset/pcfs_10.1.25.pkl`, run `coboundary_graph_all`.
+   The resuling graph is a forest in which each tree actually represents a clique (the full cliques are not computed for efficiency).
+   Visualize the graph using `plot_connected_components_as_trees` from `coboundary_graph_utils.py`.
+   
+
