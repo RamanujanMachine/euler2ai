@@ -22,8 +22,7 @@ import tiktoken
 
 
 def openai_api_key():
-    return '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'
-
+    return # FILL IN
 
 OPENAI_API_KEY = openai_api_key()
 
