@@ -50,9 +50,9 @@ If you are not interested in testing the harvesting pipeline on papers different
    Note that running `arxiv_dataset_1_gather.py` on thousands of papers may take a siginificant amount of time to ensure compliance with the arXiv API guidelines.  
    Once raw equations have been collected, run the remaining components of the `arxiv_dataset` pipeline (numbered) in order. This results in a dataframme of formulas and their symbolic limits in terms of the constant of interest.  
    
-   Step 9 generates Mathematica code that must be run using an environment containing RISC's `Guess` package, which can be downloaded here: [download Guess](https://www3.risc.jku.at/research/combinat/software/ergosum/installation.html#download).
+   Be sure to fill in `openai_api_key` from `arxiv_dataset_gpt_utils.py` with your own GPT API key. Step 9 generates Mathematica code that must be run using an environment containing RISC's `Guess` package, which can be downloaded here: [download Guess](https://www3.risc.jku.at/research/combinat/software/ergosum/installation.html#download).
    
-   The end result is a dataframe containing formulas as polynomial continued fractions (PCFs), with their irrationality measures ($\delta$s) and convergence rates precomputed.
+   The end result is a dataframe containing formulas as polynomial continued fractions (PCFs), with their irrationality measures ($\delta$ s) and convergence rates precomputed.
    This dataframe contains representatives from a conservative matrix field (CMF) generated in step 12.  
 
 3. **Unification**:  
