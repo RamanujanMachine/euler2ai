@@ -1,4 +1,4 @@
-from lib.pcf import PCF
+from ....lib.pcf import PCF
 import sympy as sp
 
 
@@ -35,7 +35,7 @@ def build_formula(formula_type, info):
         # Check for function atoms excluding built-in SymPy functions
         undefined_functions = {f for f in a.atoms(sp.Function) | b.atoms(sp.Function)
                                if isinstance(f, sp.core.function.AppliedUndef)}
-        if undefined_functions:
+        if undefined_functions or a == 0 or b == 0: # or 2 * sp.degree(a, variable_n) > sp.degree(b, variable_n):
             computable = False
         
         formula = PCF(a, b)

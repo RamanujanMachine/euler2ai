@@ -1,4 +1,4 @@
-from formula_utils import build_formula
+from dataset_utils.formula_utils import build_formula
 from config import BASE_DIR, CONSTANT
 import json
 import os
@@ -30,6 +30,7 @@ BASE_INPUT = BASE_DIR + '/4_extraction'         # classification directory
 BASE_OUTPUT = BASE_DIR + '/5_validation'        # extraction output directory
 
 # other options - normally no need to change
+TIME_OUT = 80
 EXIST_OK = True
 PRINT_EVERY = 5
 TEST = False

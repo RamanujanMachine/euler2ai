@@ -1,5 +1,5 @@
-from ..utils.gather_utils import apply_to_gather
-from .gpt import classify_formula
+from ..dataset_utils.gather_utils import apply_to_gather
+from .classification_gpt import classify_formula
 
 
 def classify_gather(api_key, constant='pi', eq_length_limit=1500):

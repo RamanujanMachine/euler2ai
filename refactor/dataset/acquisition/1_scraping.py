@@ -1,4 +1,4 @@
-from scraping.utils import gather_latex
+from refactor.lib.dataset.scraping.scraping_utils import gather_latex
 from config import BASE_DIR, ARXIV_IDS_OF_INTEREST
 import os
 import time
