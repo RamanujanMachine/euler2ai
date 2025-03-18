@@ -1,17 +1,3 @@
-# This file will contain the CobTransform class, which is a generic class for keeping track of coboundary 
-# transformations and operations. From this parent class we will derive others
-
-
-# TODO: do we want to define a new class MatrixTransforms?
-# it will 1. keep track of all transforms applied 
-# 2. keep track of the recurrence limit (for 2x2 as defined by Mobius)
-# NOTE: pcfs should be dealt with like regular matrices (no A matrix)
-
-# 18.12.24 NOTE: maybe a shift should be applied automatically to
-# the first index proceeding the last zero of the resulting recurrence's
-# matrix. Or at least an option should be added to do so.
-
-
 from .utils.recurrence_transforms_utils import fold_matrix, as_pcf_cob, as_pcf_polys, mobius, get_shift
 from .pcf import PCF
 import sympy as sp
@@ -58,7 +44,7 @@ class RecurrenceTransform():
         return matrix
     
     # TODO: debug, understand whether there is merit in transforming an entire transformation
-    # i thought that if botht the source recurrence and transformation are shifted by the same value,
+    # i thought that if both the source recurrence and transformation are shifted by the same value,
     # then the transformation should act on the shifted recurrence in a way that simply shifts the result
     # but this does not seem to be the case. Where does this fail?
     # check out pcf_matching4.ipynb for an example: The resulting matrix is not polynomial but rational.

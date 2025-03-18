@@ -1,6 +1,7 @@
 from .utils.LIReC_utils.pcf import PCF as LPCF
 from .utils.LIReC_utils.pcf import IllegalPCFException
-from .utils.matrix_utils import mobius
+from .utils.pcf_utils import content
+# from .utils.recurrence_transforms_utils import CobTransformAsPCF
 import mpmath as mm
 import gmpy2
 import sympy as sp
@@ -58,6 +59,12 @@ class PCF():
     def __repr__(self):
         return f'PCF({self.a} , {self.b})'
     
+    def subs(self, dict):
+        """
+        Create a new PCF object with the variables substituted by the values in dict.
+        """
+        return PCF(self.a.subs(dict), self.b.subs(dict))
+    
     @staticmethod
     def from_series(term, start=0, variable=n):
         """
@@ -68,6 +75,15 @@ class PCF():
         term = term.subs({variable: n + start}) # this way n=0 is the first term
         p, q = (term / term.subs({n: n-1})).cancel().simplify().as_numer_denom()
         return PCF(p + q, - p * q.subs({n: n-1}))
+    
+    # @staticmethod
+    # def from_matrix(matrix):
+    #     """
+    #     Construct a PCF from a 2x2 matrix.
+    #     """
+    #     transform = CobTransformAsPCF(matrix)
+    #     mat = transform(matrix)
+    #     return PCF(mat[1, 1], mat[0, 1])
 
     def CM(self):
         """
@@ -236,54 +252,6 @@ class PCF():
             return  # undefined
         approximant = cur_mp.mpf(p) / cur_mp.fabs(q)
         return -(1 + cur_mp.log(cur_mp.fabs(limit - approximant), cur_mp.mpf(reduced_q)))
-
-
-def is_deflatable(a_factors, b_factors, factor):
-    if n in factor.free_symbols:
-        return (
-            a_factors.get(factor, 0) > 0
-            and b_factors.get(factor, 0) > 0
-            and b_factors.get(factor.subs({n: n - 1}).expand(), 0) > 0
-        )
-    else:
-        return a_factors.get(factor, 0) > 0 and b_factors.get(factor, 0) > 1
-
-
-def remove_factor(a_factors, b_factors, factor):
-    a_factors[factor] -= 1
-    b_factors[factor] -= 1
-    b_factors[factor.subs({n: n - 1}).expand()] -= 1
-
-
-def deflate_constant(a_constant, b_constant):
-    factors = sp.factorint(sp.gcd(a_constant**2, b_constant))
-    constant = 1
-    for root, mul in factors.items():
-        constant *= root ** (mul // 2)
-    return constant
-
-
-def content(a, b, variables):
-    if len(a.free_symbols | b.free_symbols) == 0:
-        return deflate_constant(a, b)
-
-    def factor_list(poly, variables):
-        content, factors = sp.factor_list(poly, *variables)
-        return content, {
-            factor.expand(): power for factor, power in dict(factors).items()
-        }
-
-    (a_content, a_factors), (b_content, b_factors) = map(
-        lambda p: factor_list(p, variables), [a, b]
-    )
-
-    c_n = content(a_content, b_content, [])
-    for factor in a_factors:
-        while is_deflatable(a_factors, b_factors, factor):
-            remove_factor(a_factors, b_factors, factor)
-            c_n *= factor
-
-    return sp.simplify(c_n)
 
 
 def mp(precision):

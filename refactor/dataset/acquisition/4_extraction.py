@@ -1,6 +1,6 @@
-from refactor.lib.dataset.extraction.extraction_gpt import extract_formula
-from ..utils.gather_utils import gather_equations
-from ..utils.misc_utils import normalize_file_name
+from extraction.extraction_gpt import extract_formula
+from dataset_utils.gather_utils import gather_equations
+from dataset_utils.misc_utils import normalize_file_name
 from config import BASE_DIR, OPENAI_API_KEY
 import json
 import os

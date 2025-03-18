@@ -1,4 +1,4 @@
-from refactor.lib.dataset.scraping.scraping_utils import gather_latex
+from scraping.scraping_utils import gather_latex
 from config import BASE_DIR, ARXIV_IDS_OF_INTEREST
 import os
 import time
@@ -48,7 +48,9 @@ for i in range(0, len(ARXIV_IDS_OF_INTEREST), DIR_SIZE):
             continue
         if ind % SLEEP_EVERY == 0 and ind != 0:
             time.sleep(SLEEP_TIME)
-        gather, fails = gather_latex([id], verbose=VERBOSE, extended_verbose=EXTENDED_VERBOSE)
+        if VERBOSE:
+            print(f'{ind}: {id}')
+        gather, fails = gather_latex([id], verbose=False, extended_verbose=EXTENDED_VERBOSE)
         if fails:
             print(f'Failed to gather {id}')
         with open(filename, 'w') as f:

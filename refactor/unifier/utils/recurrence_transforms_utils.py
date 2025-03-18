@@ -1,6 +1,5 @@
-from ramanujantools import Matrix
-from ramanujantools.pcf import PCF
-from ramanujantools.pcf.pcf import content
+from ..pcf import PCF
+from .pcf_utils import content
 import sympy as sp
 
 
@@ -24,12 +23,12 @@ def inflate_to_polynomial(pcf: PCF, defalte_all=True):
         * inflated pcf
         * the total factor by which the pcf was inflated
     """
-    lcm = sp.lcm(pcf.a_n.as_numer_denom()[1], pcf.b_n.as_numer_denom()[1])
+    lcm = sp.lcm(pcf.a.as_numer_denom()[1], pcf.b.as_numer_denom()[1])
     pcf = pcf.inflate(lcm).simplify()
     deflater = sp.Integer(1)
     if defalte_all:
-        deflater = content(pcf.a_n, pcf.b_n, [n])
-        pcf = pcf.deflate(deflater)
+        deflater = content(pcf.a, pcf.b, [n])
+        pcf = pcf.inflate(1 / deflater)
     return pcf, sp.simplify(lcm / deflater)
 
 
@@ -37,10 +36,10 @@ def inflate_to_polynomial(pcf: PCF, defalte_all=True):
 
 
 def fold_matrix(mat, factor, symbol=n):
-  folded = Matrix([[1, 0], [0, 1]])
-  for i in range(factor):
-    folded *= mat.subs({symbol: factor * symbol - (factor - 1 - i)})
-  return folded
+    folded = sp.Matrix([[1, 0], [0, 1]])
+    for i in range(factor):
+        folded *= mat.subs({symbol: factor * symbol - (factor - 1 - i)})
+    return folded
 
 
 # as pcf (works with sympy symbol n)
@@ -65,8 +64,8 @@ def as_pcf_cob(matrix, deflate_all=True):
     """
     a, _, c, _ = [cell for cell in matrix]
     eta = as_pcf_eta(matrix, deflate_all=deflate_all)
-    return Matrix([[1, a], [0, c]]) * Matrix([[sp.sympify(eta).subs({n: n - 1}), 0], [0, 1]]) \
-        * Matrix([[1, 0], [0, c.subs({n: n - 1})]])
+    return sp.Matrix([[1, a], [0, c]]) * sp.Matrix([[sp.sympify(eta).subs({n: n - 1}), 0], [0, 1]]) \
+        * sp.Matrix([[1, 0], [0, c.subs({n: n - 1})]])
 
 
 def as_pcf_eta(matrix, deflate_all=True):
@@ -75,7 +74,7 @@ def as_pcf_eta(matrix, deflate_all=True):
     """
     if deflate_all:
         pcf = as_pcf(matrix, deflate_all=False)
-        eta = content(pcf.a_n, pcf.b_n, [n])
+        eta = content(pcf.a, pcf.b, [n])
     else:
         eta = sp.Integer(1)
     return eta
@@ -124,9 +123,9 @@ def get_folded_pcf_limit(pcf, factor, limit, symbol=n, deflate_all=True):
 # TODO: write a test for this
 
 def get_zeros(pcf: PCF):
-    zerosbnum = [z for z in sp.solve(pcf.b_n.as_numer_denom()[0], n) if isinstance(z, sp.Integer) or isinstance(z, int)]
-    zerosbden = [z for z in sp.solve(pcf.b_n.as_numer_denom()[1], n) if isinstance(z, sp.Integer) or isinstance(z, int)]
-    zerosaden = [z for z in sp.solve(pcf.a_n.as_numer_denom()[1], n) if isinstance(z, sp.Integer) or isinstance(z, int)]
+    zerosbnum = [z for z in sp.solve(pcf.b.as_numer_denom()[0], n) if isinstance(z, sp.Integer) or isinstance(z, int)]
+    zerosbden = [z for z in sp.solve(pcf.b.as_numer_denom()[1], n) if isinstance(z, sp.Integer) or isinstance(z, int)]
+    zerosaden = [z for z in sp.solve(pcf.a.as_numer_denom()[1], n) if isinstance(z, sp.Integer) or isinstance(z, int)]
     return {'b_num': zerosbnum, 'b_den': zerosbden, 'a_den': zerosaden}
 
 

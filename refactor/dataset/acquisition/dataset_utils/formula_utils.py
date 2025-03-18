@@ -1,4 +1,4 @@
-from ....lib.pcf import PCF
+from unifier.pcf import PCF
 import sympy as sp
 
 

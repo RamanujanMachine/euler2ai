@@ -1,6 +1,8 @@
-from lib.pcf import PCF
-from lib.utils.LIReC_utils.lirec_identify import lirec_identify, lirec_identify_result_to_sympy, MIN_PSLQ_DPS
+from .utils.LIReC_utils.lirec_identify import lirec_identify, lirec_identify_result_to_sympy, MIN_PSLQ_DPS
 import mpmath as mm
+
+
+# based on LIReC's PSLQ algorithm
 
 
 mm.mp.dps = 16000
@@ -10,6 +12,23 @@ mm.mp.dps = MIN_PSLQ_DPS
 
 def identify(value, constants=[MPMATH_PI], precision=None, digits=1000,
              min_roi=2, as_sympy=True, verbose=False):
+    """
+    Identifies the relation between a given value and a set of constants
+    using LIReC's PSLQ algorithm.
+
+    Args:
+        * value: the value to identify
+        * constants: the constants to use in the identification
+        * precision: the precision to use in the identification
+        * digits: the number of digits to use in the identification
+        * min_roi: the minimum ROI to consider in the identification
+        * as_sympy: whether to return the results as sympy expressions
+        * verbose: whether to print the ROI and results
+
+    Returns:
+        * the identified relation in terms of the constants
+        (the first constant is always represented as the sympy 'pi' symbol)
+    """
     if precision:
         if precision < 4:
             return None

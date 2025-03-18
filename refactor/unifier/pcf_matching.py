@@ -1,30 +1,12 @@
-from coboundary_solver import CobViaLim, PCFCobViaLim
-from utils.coboundary_solver_utils import NoSolutionError
-from recurrence_transforms import FoldToPCFTransform, CobTransform, RecurrenceTransform, CobTransformShift
-from pcf_dynamical_parameters import PCFDynamics
-from utils.recurrence_transforms_utils import mobius
-from ramanujantools.pcf import PCF
+from .coboundary_solver import CobViaLim, PCFCobViaLim
+from .utils.coboundary_solver_utils import NoSolutionError
+from .recurrence_transforms import FoldToPCFTransform, CobTransform, RecurrenceTransform, CobTransformShift
+from .utils.recurrence_transforms_utils import mobius
+from .pcf import PCF
 import sympy as sp
 from sympy.abc import n
 from typing import Tuple
 from IPython.display import display
-
-
-# not currently used
-# for getting best rational approximations to the ratios between eigenvalue ratios
-def extract_cf(n, d):
-    if d == 0: return []
-    q = n // d
-    r = n - q*d
-    return [q] + extract_cf(d, r)
-
-
-def compute_cf(alist, depth):
-    if len(alist) == 0:
-        return 0
-    if len(alist) == 1 or depth == 0:
-        return alist[0]
-    return alist[0] + 1 / compute_cf(alist[1:], depth-1)
 
 
 def get_necessary_shift_to_coboundary(U, g1, g2):
@@ -67,7 +49,7 @@ class CannotFoldError(Exception):
 #         U, g1, g2 = cobvialim.extract_coboundary_triple(fit_up_to=max_fit_up_to)
 
 
-def match_pcfs(pcf1: PCF, pcf2: PCF, limit1, limit2, eigenratio1, eigenratio2, base_constant=sp.pi,
+def match_pcfs(pcf1: PCF, pcf2: PCF, limit1, limit2, convrate1, convrate2, base_constant=sp.pi,
                                  fold=True, max_fold: int = 3, approximate_ratio_to=10, max_shift=3,
                                  max_fit_up_to: int = 40, fit_up_to_step: int = 5, shift_cob_as_necessary=True, # currently not used, see end of function
                                  cob_via_lim_verbose=False, verbose=False
@@ -79,7 +61,7 @@ def match_pcfs(pcf1: PCF, pcf2: PCF, limit1, limit2, eigenratio1, eigenratio2, b
     Args:
         * pcf1, pcf2: the pcfs to match.
         * limit1, limit2: the limits of the pcfs in terms of base_constant.
-        * eigenratio1, eigenratio2: the eigenvalue ratios of the pcfs.
+        * convrate1, convrate2: the exponential convergence rates of the pcfs.
         * base_constant: the base constant for the pcfs.
         * fold: whether to fold the pcfs to match the eigenvalue ratios.
         * max_fold: the maximum fold to allow when folding the pcfs.
@@ -123,18 +105,18 @@ def match_pcfs(pcf1: PCF, pcf2: PCF, limit1, limit2, eigenratio1, eigenratio2, b
         except NoSolutionError:
             pass
         fit_up_to += fit_up_to_step
-    foldtopcf1, foldtopcf2 = FoldToPCFTransform(pcf1.M(), 1), FoldToPCFTransform(pcf1.M(), 1) # initialize
+    foldtopcf1, foldtopcf2 = FoldToPCFTransform(pcf1.CM(), 1), FoldToPCFTransform(pcf1.CM(), 1) # initialize
     
     if U is None:
         # matching convergence rates
-        if fold and eigenratio1 != 0 and eigenratio2 != 0:
-            ratio = sp.Rational(str(round(eigenratio1 / eigenratio2, 2))).limit_denominator(approximate_ratio_to)
+        if fold and convrate1 != 0 and convrate2 != 0:
+            ratio = sp.Rational(str(round(convrate1 / convrate2, 2))).limit_denominator(approximate_ratio_to)
             num, den = ratio.as_numer_denom()
             num = num if num != 0 else 1
             den = den if den != 0 else 1
             ratio = sp.Rational(num, den)
             if verbose:
-                print(f'Eigenvalue ratios: {str(eigenratio1)[:5]}, {str(eigenratio2)[:5]}, ratio: {str(ratio)[:5]}.')
+                print(f'Eigenvalue ratios: {str(convrate1)[:5]}, {str(convrate2)[:5]}, ratio: {str(ratio)[:5]}.')
             if ratio == 1:
                 fold = False
             if fold:
@@ -143,8 +125,8 @@ def match_pcfs(pcf1: PCF, pcf2: PCF, limit1, limit2, eigenratio1, eigenratio2, b
                                         f' and folds are {ratio.denominator, ratio.numerator}.')
                 if verbose:
                     print(f'Folding pcfs by {ratio.denominator} and {ratio.numerator}.')
-                foldtopcf1 = FoldToPCFTransform(pcf1.M(), ratio.denominator, shift_pcf_as_necessary=False) 
-                foldtopcf2 = FoldToPCFTransform(pcf2.M(), ratio.numerator, shift_pcf_as_necessary=False)
+                foldtopcf1 = FoldToPCFTransform(pcf1.CM(), ratio.denominator, shift_pcf_as_necessary=False) 
+                foldtopcf2 = FoldToPCFTransform(pcf2.CM(), ratio.numerator, shift_pcf_as_necessary=False)
                 # shift_pcf_as_necessary=False because otherwise the new limit will be problematic to compute... may not converge to pi?
                 # TODO: understand what a singular matrix does to the limit
                 # Example to consider: ([2, 2], [1, 1]). This will convert the limit to 2. No matter what it was...
@@ -166,10 +148,10 @@ def match_pcfs(pcf1: PCF, pcf2: PCF, limit1, limit2, eigenratio1, eigenratio2, b
                         cob_shift1 += shift1; cob_shift2 += shift2
                         if verbose:
                             print(f'        Shifting pcf1, pcf2 by: {cob_shift1}, {cob_shift2}.')
-                        shift_transform1 = RecurrenceTransform([CobTransformShift(pcf1.M(), cob_shift1)])
-                        shift_transform2 = RecurrenceTransform([CobTransformShift(pcf2.M(), cob_shift2)])
-                        foldtopcf1 = FoldToPCFTransform(shift_transform1(pcf1.M()), ratio.denominator, shift_pcf_as_necessary=False)
-                        foldtopcf2 = FoldToPCFTransform(shift_transform2(pcf2.M()), ratio.numerator, shift_pcf_as_necessary=False)
+                        shift_transform1 = RecurrenceTransform([CobTransformShift(pcf1.CM(), cob_shift1)])
+                        shift_transform2 = RecurrenceTransform([CobTransformShift(pcf2.CM(), cob_shift2)])
+                        foldtopcf1 = FoldToPCFTransform(shift_transform1(pcf1.CM()), ratio.denominator, shift_pcf_as_necessary=False)
+                        foldtopcf2 = FoldToPCFTransform(shift_transform2(pcf2.CM()), ratio.numerator, shift_pcf_as_necessary=False)
                     else:
                         fixed = True
                         foldtopcf1 = RecurrenceTransform([shift_transform1, foldtopcf1]) if cob_shift1 else foldtopcf1
@@ -184,8 +166,8 @@ def match_pcfs(pcf1: PCF, pcf2: PCF, limit1, limit2, eigenratio1, eigenratio2, b
                 ##### !!!!! CONTINUE HERE !!!!! #####
                 # TODO: debug why these do not result in polynomial matrices, but in rational matrices...
                 # There may be a mistake in the logic that the transforms are modified by a subs upon shifting (hopping) in the lattice... 
-                folded_pcf1 = foldtopcf1(pcf1.M()) # folded_pcf{i} are matrices
-                folded_pcf2 = foldtopcf2(pcf2.M())
+                folded_pcf1 = foldtopcf1(pcf1.CM()) # folded_pcf{i} are matrices
+                folded_pcf2 = foldtopcf2(pcf2.CM())
                 if verbose:
                     print(f'    Folded pcf matrices:') 
                     # display(folded_pcf1)

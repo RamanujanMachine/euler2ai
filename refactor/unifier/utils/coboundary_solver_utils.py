@@ -1,4 +1,4 @@
-from matrix_utils import mobius, matrix_denominator_lcm, matrix_gcd
+from .matrix_utils import mobius, matrix_denominator_lcm, matrix_gcd
 import sympy as sp
 from itertools import product
 from IPython.display import display

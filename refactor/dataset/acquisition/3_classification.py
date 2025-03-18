@@ -1,4 +1,4 @@
-from .classification.classification_utils import classify_gather
+from classification.classification_utils import classify_gather
 from config import BASE_DIR, OPENAI_API_KEY, CONSTANT
 import json
 import os
