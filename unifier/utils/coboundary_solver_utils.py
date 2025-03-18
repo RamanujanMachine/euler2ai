@@ -14,6 +14,10 @@ class CoboundaryError(Exception):
     pass
 
 
+class NoSolutionError(Exception):
+    pass
+
+
 def check_are_identical_upto_nonzero_scale(prod1, prod2, return_scale=False, verbose=False):
     """
     Check if two matrices are identical up to a nonzero scale.
@@ -94,10 +98,6 @@ def check_coboundary(mat1, mat2, coboundary_matrix, symbol=n, exact=False,
 
 
 # rational fit utils
-
-
-class NoSolutionError(Exception):
-    pass
 
 
 def get_limit_from_i(recurrence_matrix, limit, i, A_matrix=sp.Matrix.eye(2), symbol=n):

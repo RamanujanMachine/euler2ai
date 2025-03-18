@@ -5,8 +5,7 @@ setup(
     name="unifier",
     version="0.0.1",
     description="Library for unifying formulas",
-    package_dir={"": "unifier"},
-    packages=find_packages(where="unifier"),
+    packages=['unifier', 'unifier.utils', 'unifier.utils.LIReC_utils'],
     install_requires=[
         'gmpy2==2.2.1',
         'ipython==9.0.2',
