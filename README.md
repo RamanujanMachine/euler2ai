@@ -36,14 +36,23 @@ The result is a graph, specifically a collection of cliques, containing novel tr
 
 ## Getting Started
 
-Please check out the tutorial [notebook](https://colab.research.google.com/drive/13EC9hwEhoA_xvEu_7p_9wbIl2QjDknqC?authuser=1#scrollTo=Jh-CDhaF0twQ).
+For a quick intro, please check out the tutorial [notebook](https://colab.research.google.com/drive/13EC9hwEhoA_xvEu_7p_9wbIl2QjDknqC?authuser=1#scrollTo=Jh-CDhaF0twQ).
 
 To reproduce the results and explore the methodologies presented in the paper, follow these steps:
 
-1. **Clone the repository**:
+1. **Clone the repository and install the `unifier` package**:
    ```bash
    git clone https://github.com/RamanujanMachine/unifying-formulas-for-math-constants.git
-   cd unifying-formulas-for-math-constants  
+   cd unifying-formulas-for-math-constants
+   pip install .
+   ```
+
+   or simply
+
+   ```bash
+   pip install git+https://github.com/RamanujanMachine/unifying-formulas-for-math-constants.git
+   ```
+   and then download the relevant data separately.
 
 If you are not interested in testing the harvesting pipeline on papers different than the ones used in the paper, proceed to step 3.
 
