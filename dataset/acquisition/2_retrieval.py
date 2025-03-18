@@ -1,7 +1,7 @@
 from retrieval.retrieval_utils import build_general_pipeline_for_gather, clean_gather, \
     sat_filter_gather, split_equations_gather
 from retrieval.retrieval_regular_expressions import constant_computing_patterns
-from config import BASE_DIR, CONSTANT
+from config import BASE_DIR, CONSTANT, MAX_WORKERS
 import os
 import json
 from multiprocessing import Pool
@@ -14,7 +14,7 @@ FORBIDDEN_STRINGS = [r'sqrt', r'tan', r'cos', r'sin', r'log', r'ln',
 # ['sqrt', 'tan', 'cos', 'sin', 'log', 'ln', 'zeta', f'{CONSTANT}**', f'{CONSTANT}^']
 
 # multiprocessing settings
-NUM_WORKERS = 6
+NUM_WORKERS = min(6, MAX_WORKERS)
 CHUNKSIZE = 100
 
 # directory paths

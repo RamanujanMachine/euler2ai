@@ -1,5 +1,5 @@
 from dataset_utils.formula_utils import build_formula
-from config import BASE_DIR, CONSTANT
+from config import BASE_DIR, CONSTANT, MAX_WORKERS
 import json
 import os
 import time
@@ -23,7 +23,7 @@ from multiprocessing import Pool, Manager
 
 
 # multiprocessing settings
-NUM_WORKERS = 8
+NUM_WORKERS = min(8, MAX_WORKERS)
 
 # directory paths
 BASE_INPUT = BASE_DIR + '/4_extraction'         # classification directory

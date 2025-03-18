@@ -1,7 +1,7 @@
 from extraction.extraction_gpt import extract_formula
 from dataset_utils.gather_utils import gather_equations
 from dataset_utils.misc_utils import normalize_file_name
-from config import BASE_DIR, OPENAI_API_KEY
+from config import BASE_DIR, OPENAI_API_KEY, MAX_WORKERS
 import json
 import os
 import time
@@ -9,7 +9,7 @@ from multiprocessing import Pool
 
 
 # multiprocessing settings
-NUM_WORKERS = 10
+NUM_WORKERS = min(8, MAX_WORKERS)
 
 # directory paths
 BASE_INPUT = BASE_DIR + '/3_classification'         # classification directory

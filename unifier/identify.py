@@ -1,4 +1,5 @@
 from .utils.LIReC_utils.lirec_identify import lirec_identify, lirec_identify_result_to_sympy, MIN_PSLQ_DPS
+from .pcf import PCF
 import mpmath as mm
 
 
@@ -49,3 +50,72 @@ def identify(value, constants=[MPMATH_PI], precision=None, digits=1000,
 def round_mpf(x, decimals=0):
     factor = mm.mpf(10) ** decimals
     return mm.mpf(str(mm.floor(x * factor + mm.mpf('0.5')))) / factor
+
+
+def identification_loop(limit,
+                        precision,
+                        constants=[MPMATH_PI],
+                        max_iters=3,
+                        min_roi=2,
+                        as_sympy=True,
+                        verbose=False):
+    attempts = 0
+    while precision > 4 and attempts < max_iters:
+        if verbose:
+            print('Trying precision:', precision)
+        result = identify(limit, constants=constants,
+                          precision=precision, min_roi=min_roi,
+                          as_sympy=as_sympy, verbose=verbose)
+        if result:
+            return result
+        if precision >= 10000:
+            precision -= 5000
+        elif precision >= 1000:
+            precision -= 800
+        elif precision >= 300:
+            precision -= 100
+        elif precision >= 100:
+            precision -= 50
+        elif precision >= 50:
+            precision -= 20
+        elif precision >= 10:
+            precision -= 10
+        else:
+            precision -= 1
+        attempts += 1
+    return None
+
+
+def identify_pcf_limit(pcf: PCF,
+                       depth=10000,
+                       constants=[MPMATH_PI],
+                       digits=1000,
+                       convergence_threshold=5e-1,
+                       auto_depth=False,
+                       min_roi=2,
+                       as_sympy=True,
+                       max_iters=3,
+                       verbose=False):
+    if auto_depth:
+        depth = 10000
+        conv = pcf.convergence_rate(4000)
+        if verbose:
+            print('Convergence rate:', conv)
+        if conv < convergence_threshold:
+            depth = 2000000
+        if verbose:
+            print('Automatic depth:', depth)
+    limit, precision = pcf.limit(depth=depth)
+    if verbose:
+        print('Empirical limit:',
+              str(limit).split('.')[0] + '.' + str(limit).split('.')[1][:min(precision+1, 30)])
+        print('Precision:', precision)
+        print('Identifying limit')
+    # if precision < 4:
+    #     return None
+    return identification_loop(limit, precision,
+                               constants=constants,
+                               max_iters=max_iters,
+                               min_roi=min_roi,
+                               as_sympy=as_sympy,
+                               verbose=verbose)
