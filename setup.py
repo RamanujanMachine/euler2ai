@@ -8,12 +8,16 @@ setup(
     package_dir={"": "unifier"},
     packages=find_packages(where="unifier"),
     install_requires=[
-        "gmpy2>=2.2.1",
-        "matplotlib>=3.10.1",
-        "mpmath>=1.3.0",
-        "networkx>=3.4.2",
-        "numpy>=2.2.4",
-        "sympy>=1.13.3"
+        'gmpy2==2.2.1',
+        'ipython==9.0.2',
+        'matplotlib==3.10.1',
+        'mpmath==1.3.0',
+        'networkx==3.4.2',
+        'numpy==2.2.4',
+        'openai==1.66.3',
+        'pydantic==2.10.6',
+        'sympy==1.13.3',
+        'tiktoken==0.9.0',
         ],
     python_requires=">=3.10",
 )
