@@ -1,6 +1,10 @@
-from .scraping_regular_expressions import equation_patterns, \
-    split_latex, char_index_to_line_mapping, \
-    commented_block_patterns, count_unescaped_dollar_signs
+from .scraping_regular_expressions import (
+    equation_patterns,
+    split_latex,
+    char_index_to_line_mapping,
+    commented_block_patterns,
+    count_unescaped_dollar_signs
+)
 import re
 import io
 import time
