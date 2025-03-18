@@ -1,0 +1,12 @@
+Metadata-Version: 2.2
+Name: unifier
+Version: 0.0.1
+Summary: Library for unifying formulas
+Requires-Python: >=3.10
+Requires-Dist: gmpy2>=2.2.1
+Requires-Dist: matplotlib>=3.10.1
+Requires-Dist: mpmath>=1.3.0
+Requires-Dist: networkx>=3.4.2
+Requires-Dist: numpy>=2.2.4
+Requires-Dist: sympy>=1.13.3
+Dynamic: requires-python

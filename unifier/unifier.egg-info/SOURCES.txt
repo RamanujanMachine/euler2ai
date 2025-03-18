@@ -1,0 +1,17 @@
+pyproject.toml
+setup.py
+unifier/unifier.egg-info/PKG-INFO
+unifier/unifier.egg-info/SOURCES.txt
+unifier/unifier.egg-info/dependency_links.txt
+unifier/unifier.egg-info/requires.txt
+unifier/unifier.egg-info/top_level.txt
+unifier/utils/__init__.py
+unifier/utils/coboundary_graph_utils.py
+unifier/utils/coboundary_solver_utils.py
+unifier/utils/matrix_utils.py
+unifier/utils/pcf_utils.py
+unifier/utils/recurrence_transforms_utils.py
+unifier/utils/LIReC_utils/__init__.py
+unifier/utils/LIReC_utils/lirec_identify.py
+unifier/utils/LIReC_utils/pcf.py
+unifier/utils/LIReC_utils/pslq_utils.py
