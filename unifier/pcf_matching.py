@@ -6,7 +6,6 @@ from .pcf import PCF
 import sympy as sp
 from sympy.abc import n
 from typing import Tuple
-from IPython.display import display
 
 
 def get_necessary_shift_to_coboundary(U, g1, g2):
@@ -170,9 +169,7 @@ def match_pcfs(pcf1: PCF, pcf2: PCF, limit1, limit2, convrate1, convrate2, base_
                 folded_pcf2 = foldtopcf2(pcf2.CM())
                 if verbose:
                     print(f'    Folded pcf matrices:') 
-                    # display(folded_pcf1)
                     print(folded_pcf1)
-                    # display(folded_pcf2)
                     print(folded_pcf2)
                 folded_limit1 = foldtopcf1.transform_limit(mobius(pcf1.A().inv(), limit1))
                 folded_limit2 = foldtopcf2.transform_limit(mobius(pcf2.A().inv(), limit2))

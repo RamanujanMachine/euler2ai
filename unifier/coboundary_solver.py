@@ -2,7 +2,6 @@ from .utils.coboundary_solver_utils import get_limit_from_i, check_coboundary, g
 from .utils.matrix_utils import matrix_denominator_lcm, matrix_gcd
 import sympy as sp
 from itertools import product
-from IPython.display import display
 from typing import Optional, Tuple
 import numpy as np
 import matplotlib.pyplot as plt
@@ -94,8 +93,8 @@ class CobViaLim():
         U = (matrix_denominator_lcm(U) * U).applyfunc(lambda x: sp.expand(sp.cancel(x)))
         U = (U / matrix_gcd(U)).applyfunc(lambda x: sp.expand(sp.cancel(x)))
         if verbose:
-            display(sol)
-            display(U)
+            print(sol)
+            print(U)
         return U
 
     def solve_empirical_U(self, max_i, verbose=False):
@@ -124,7 +123,7 @@ class CobViaLim():
             last_U_i = (matrix_denominator_lcm(last_U_i) * last_U_i).applyfunc(lambda x: sp.expand(sp.cancel(x)))
             last_U_i = (last_U_i / matrix_gcd(last_U_i)).applyfunc(lambda x: sp.expand(sp.cancel(x)))
             if verbose:
-                display(last_U_i)
+                print(last_U_i)
             empirical_coboundaries[:, i-1] = last_U_i.reshape(4, 1)
         self.empirical_coboundaries = empirical_coboundaries
 
@@ -250,7 +249,7 @@ class CobViaLim():
                 coboundary matrices zero out at some point, find the element that has its last zero in the
                 smallest index, truncate all sequences to one after this index and take the nonzero sequence
                 to be the empirical denominator. Default is True.
-            * verbose: print and display rational function hypotheses then coboundary matrix hypotheses.
+            * verbose: print rational function hypotheses then coboundary matrix hypotheses.
 
         Raises:
             * NoSolutionError: if no coboundary matrix is found (if the rational fit nullspace is empty).
@@ -291,7 +290,7 @@ class CobViaLim():
             U_hypothesis = (sp.Matrix([[u1_to_4[0], u1_to_4[1]], [u1_to_4[2], u1_to_4[3]]])).applyfunc(sp.expand)
             if verbose:
                 print(f'Coboundary matrix hypothesis {ind + 1}:')
-                display(U_hypothesis)
+                print(U_hypothesis)
             if self.check_coboundary(U = U_hypothesis):
                 self.U = U_hypothesis
                 if not all_solutions:

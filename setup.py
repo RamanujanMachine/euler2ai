@@ -8,7 +8,6 @@ setup(
     packages=['unifier', 'unifier.utils', 'unifier.utils.LIReC_utils'],
     install_requires=[
         'gmpy2==2.2.1',
-        'ipython==9.0.2',
         'matplotlib==3.10.1',
         'mpmath==1.3.0',
         'networkx==3.4.2',

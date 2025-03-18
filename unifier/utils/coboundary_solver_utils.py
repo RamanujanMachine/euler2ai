@@ -1,7 +1,6 @@
 from .matrix_utils import mobius, matrix_denominator_lcm, matrix_gcd
 import sympy as sp
 from itertools import product
-from IPython.display import display
 n = sp.Symbol('n')
 
 
@@ -46,7 +45,7 @@ def check_are_identical_upto_nonzero_scale(prod1, prod2, return_scale=False, ver
         lhs = prod1[i, j].simplify().expand()
         rhs = (prod2[i, j] * scale).simplify().expand()
         if verbose:
-            display(lhs, rhs)
+            print(lhs, rhs)
         if lhs != rhs:
             coboundary_bool = False
             break
@@ -61,7 +60,7 @@ def check_are_identical_upto_nonzero_scale(prod1, prod2, return_scale=False, ver
     else:
         if verbose:
             print('Coboundary condition satisfied.')
-            display(scale)
+            print(scale)
         if return_scale:
             return scale
     return True
@@ -87,9 +86,9 @@ def check_coboundary(mat1, mat2, coboundary_matrix, symbol=n, exact=False,
     prod2 = (coboundary_matrix * mat2).applyfunc(sp.expand)
     if verbose:
         print('LHS:')
-        display(prod1)
+        print(prod1)
         print('RHS:')
-        display(prod2)
+        print(prod2)
     if return_prod:
         return prod1, prod2
     elif exact:
@@ -152,13 +151,13 @@ def polynomials_from_nullspace(vector, num_deg, den_deg, symbol=n, verbose=False
     vector = sp.Matrix(vector)
     num, den = sp.Poly(vector[:num_deg + 1][::-1], symbol), sp.Poly(vector[num_deg + 1:][::-1], symbol)
     if verbose:
-        display(num, den)
+        print(num, den)
     num_den_mat = sp.Matrix([num.expr, den.expr])
     num_den_mat = (num_den_mat * matrix_denominator_lcm(num_den_mat)).applyfunc(lambda x: sp.expand(sp.cancel(x)))
     gcd = matrix_gcd(num_den_mat)
     num, den = (num_den_mat[0] / gcd).cancel().expand(), (num_den_mat[1] / gcd).cancel().expand()
     if verbose:
-        display(num, den)
+        print(num, den)
     return num, den
 
 
@@ -189,7 +188,7 @@ def get_rational_hypotheses(empirical_numerators, empirical_denominators,
     hypotheses = set()
     mat = construct_matrix(empirical_numerators, empirical_denominators, Pdeg, Qdeg, initial_index=initial_index)
     if verbose:
-        display(mat)
+        print(mat)
     null = mat.nullspace()
     if verbose:
         print(f'Rank: {mat.shape[1] - len(null)}, Nullity: {len(null)}')

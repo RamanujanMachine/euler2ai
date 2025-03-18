@@ -9,7 +9,6 @@ import sympy as sp
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
-from IPython.display import display
 
 
 def recursive_coboundary_graph(delta, G, rel=15e-3, source_types=['arxiv', 'manual'],
@@ -287,7 +286,7 @@ def build_node_label(data, verbose=False):
             if formula is not None and type(formula) != PCF:
                 formulas[(formula, i)] = source['metadata']['info']['value']
                 if verbose:
-                    display(formula, formulas[formula, i])
+                    print(formula, formulas[formula, i])
 
     formula_strings = {(sp.latex(formula), i): filter_value_latex(sp.latex(sp.sympify(value)))
                        for (formula, i), value in formulas.items()}
