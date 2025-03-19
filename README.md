@@ -4,7 +4,7 @@
 # From Euler to AI: Unifying Formulas for Mathematical Constants
 
 This repository accompanies the research article "[From Euler to AI: Unifying Formulas for Mathematical Constants](https://arxiv.org/abs/2502.17533)".
-The paper introduces a systematic methodology for discovering equivalences for formulas representing mathematical constants,
+The paper introduces a systematic methodology for discovering equivalences between formulas representing mathematical constants,
 utilizing modern large language models for data collection and innovative mathematical algorithms for proof discovery.
 Using this framework, many formulas are found to be embedded in a single mathematical structure termed a Conservative Matrix Field (CMF), which was [recently discovered](https://www.pnas.org/doi/10.1073/pnas.2321440121).
 The project shows how AI can be paired with tailored algorithms to automatically unify and expand upon mathematical knowledge.
