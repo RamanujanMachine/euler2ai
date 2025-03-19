@@ -62,7 +62,7 @@ To reproduce the results and explore the methodologies presented in the paper, f
    - `BASE_DIR`: directory in which to store intermediate pipeline results, from each step.
    - `ARXIV_IDS_OF_INTEREST`: a list of arXiv ids to be scraped for formulas (pickle of a list or a list, if #ids is sufficiently small, of id **strings**).  
    - `CONSTANT`: (Note: Only 'pi' is currently supported.) The constant of interest for which formulas should be harvested, as a LaTeX string. 
-   - `MAX_WORKERS`: for multiprocessing (configure according to your machine), can only lower the number of workers used throughout the pipeline as the minimum between this and default values are always taken.
+   - `MAX_WORKERS`: for multiprocessing (configure according to your machine), can only lower the number of workers used throughout the pipeline as the minimum between this and default values is always taken.
    - `OPENAI_API_KEY`: private OpenAI API key.
 
    Customize `config.py`, then run each of the following scripts in order:
