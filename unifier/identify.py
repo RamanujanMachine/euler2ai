@@ -30,6 +30,8 @@ def identify(value, constants=[MPMATH_PI], precision=None, digits=1000,
         * the identified relation in terms of the constants
         (the first constant is always represented as the sympy 'pi' symbol)
     """
+    if isinstance(value, str):
+        value = mm.mpf(value)
     if precision:
         if precision < 4:
             return None

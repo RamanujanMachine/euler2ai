@@ -1,5 +1,5 @@
 from .utils.LIReC_utils.pcf import PCF as LPCF
-from .utils.LIReC_utils.pcf import IllegalPCFException
+# from .utils.LIReC_utils.pcf import IllegalPCFException
 from .utils.pcf_utils import content
 # from .utils.recurrence_transforms_utils import CobTransformAsPCF
 import mpmath as mm

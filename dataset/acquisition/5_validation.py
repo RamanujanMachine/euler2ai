@@ -1,25 +1,9 @@
+from unifier.identify import identification_loop
 from dataset_utils.formula_utils import build_formula
-from config import BASE_DIR, CONSTANT, MAX_WORKERS
+from config import BASE_DIR, MAX_WORKERS
+from multiprocessing import Process
 import json
 import os
-import time
-from multiprocessing import Pool, Manager
-
-
-#### THIS IS CURRENTLY A COPY OF 4_extraction.py ####
-# this file will
-# 1. build formulas
-# 2. compute formulas (TO WHAT DEPTH?? - use evalf(1000) for series)
-# 3. identify values
-# 4. save identified values and computed values to csv files, and also failed identifications
-#   - series csv:
-#       extraction file, identified value, computed value mpf (up to precision)
-#   - pcf csv:
-#       extraction file, identified value, computed value mpf (up to precision)
-#   - failed build csv:
-#       extraction file, formula type
-#   - failed identification csv:
-#       extraction file, formula type
 
 
 # multiprocessing settings
@@ -30,7 +14,7 @@ BASE_INPUT = BASE_DIR + '/4_extraction'         # classification directory
 BASE_OUTPUT = BASE_DIR + '/5_validation'        # extraction output directory
 
 # other options - normally no need to change
-TIME_OUT = 80
+TIMEOUT = 10
 EXIST_OK = True
 PRINT_EVERY = 5
 TEST = False
@@ -50,22 +34,50 @@ def process_arg_dict(arg_dict):
         return
     
     formula, computable = build_formula(eqdict['type'], eqdict['info'])
+    save_dict = {'formula': str(formula), 'computable': computable}
+
+    if not os.path.exists(arg_dict['file_destin_dir']):
+        os.makedirs(arg_dict['file_destin_dir'])
+
     if not computable:
-        # add to csv of formulas that are not computable:
-        # origin file, formula type, formula
-        return
+        save_dict['eval'] = None
+        save_dict['id'] = None
+    else:
+        try:
+            if eqdict['type'] == 'series':
+                evaluated_formula = formula.evalf(1000)
+            elif eqdict['type'] == 'cf':
+                conv_rate = formula.convergence_rate(4000)
+                if conv_rate < 5e-2:
+                    depth = 2000000
+                else:
+                    depth = 50000
+                evaluated_formula, precision = formula.limit(depth)
+        except Exception as e:
+            print(f"Compute error in {arg_dict['file_origin']}: {e}")
+            evaluated_formula = None
+            save_dict['error'] = str(e)
+        if evaluated_formula is not None:
+            try:
+                if eqdict['type'] == 'series':
+                    identification = identification_loop(str(evaluated_formula), 100)
+                elif eqdict['type'] == 'cf':
+                    identification = identification_loop(str(evaluated_formula)[:precision], precision-1)
+            except Exception as e:
+                print(f"Identification error in {arg_dict['file_origin']}: {e}")
+                identification = None
+                save_dict['error'] = str(e)
+        else:
+            identification = None
+        save_dict['eval'] = str(evaluated_formula) if evaluated_formula is not None else None
+        save_dict['id'] = str(identification) if identification is not None else None 
 
-    try:
-
-        if not os.path.exists(arg_dict['file_destin_dir']):
-            os.makedirs(arg_dict['file_destin_dir'])
-    except Exception as e:
-        print(f"Error in {arg_dict['file_origin']}: {e}")
-        return
+    with open(arg_dict['file_destin'], 'w') as f:
+            json.dump(save_dict, f)
+    return
 
 
 if __name__ == "__main__":
-
     print('Building job...')
 
     job = []
@@ -90,10 +102,19 @@ if __name__ == "__main__":
                 if total % PRINT_EVERY == 0:
                     print(total, file.replace('.json', ''))
 
-    print('Total number of gathers:', total)
-
+    print(f'Total number of formulas to check: {total}')
     print('Running...')
 
-    with Pool(NUM_WORKERS) as p:
-        for _ in p.imap_unordered(process_arg_dict, job): # chunksize=1
-            pass
+    for i in range(0, len(job), NUM_WORKERS):
+        processes = []
+        for arg_dict in job[i:i+NUM_WORKERS]:
+            process = Process(target=process_arg_dict, args=(arg_dict,))
+            processes.append(process)
+            process.start()
+        for process in processes:
+            process.join(timeout=TIMEOUT)
+        for process in processes:
+            if process.is_alive():
+                print(f"Timeout: {process.name} did not finish in {TIMEOUT} seconds.")
+                process.terminate()
+                process.join()
