@@ -47,7 +47,7 @@ To reproduce the results and explore the methodologies presented in the paper, f
    pip install .
    ```
 
-   which installs our package and copies our dataset and scripts. Alternatively,  
+   which installs the `unifier` package and copies datasets and scripts to the local machine. Alternatively,  
 
    ```bash
    pip install git+https://github.com/RamanujanMachine/unifying-formulas-for-math-constants.git
