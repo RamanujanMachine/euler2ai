@@ -29,7 +29,7 @@ A multi-stage pipeline extracts formulas calculating the constant of interest (e
 Now represented as polynomial recurrences, formulas undergo:  
 1. Computation of dynamical metrics: the irrationality measure ($\delta$) and convergence rate are calculated.
 2. Initial clustering: based on the $\delta$ metric.
-3. Formula matching: new algorithms are applied to discover novel connections between formulas.
+3. Formula matching: new algorithms are applied to discover novel connections (a composition of "folds" + coboundary equivalences) between formulas.
 
 The result is a graph, specifically a collection of cliques, containing novel transformations between formulas that prove they are equivalent.
 
@@ -39,19 +39,20 @@ For a quick intro, please check out the tutorial [notebook](https://colab.resear
 
 To reproduce the results and explore the methodologies presented in the paper, follow these steps:
 
-1. **Clone the repository and install the `unifier` package**:
+1. **Clone the repository and install the `unifier` package**:  
+   Create a new virtual environment and run
    ```bash
    git clone https://github.com/RamanujanMachine/unifying-formulas-for-math-constants.git
    cd unifying-formulas-for-math-constants
    pip install .
    ```
 
-   or simply
+   which installs our package and copies our dataset and scripts. Alternatively,  
 
    ```bash
    pip install git+https://github.com/RamanujanMachine/unifying-formulas-for-math-constants.git
    ```
-   and then download the relevant data separately.
+   and download the relevant data and scripts separately as needed.
 
 **Proceed to step 3 if you are interested in recreating the paper's results without testing the harvesting pipeline.**
 
@@ -67,7 +68,7 @@ To reproduce the results and explore the methodologies presented in the paper, f
    Customize `config.py`, then run each of the following scripts in order:
    - `1_scraping.py`: (Note: may take a few weeks for hundreds of thousands of arXiv ids to ensure compliance with the arXiv API guidelines.) Collects LaTeX equation strings from each of the articles in the list `ARXIV_IDS_OF_INTEREST`.  
    - `2_retrieval.py`: Sifts for equations containing series or continued fractions that compute the constant of interest.
-   - `3_classification.py`: Classifies each candidate formula as computing the constant of interest or containing the constant's symbol (e.g. $\pi$) in an unrelated context (discarded).
+   - `3_classification.py`: Classifies each candidate formula as computing the constant of interest (passes to next step) or containing the constant's symbol (e.g. $\pi$) in an unrelated context (discarded). This step is intended to decrease the number of candidate LaTTeX strings passed to the next stage.  
    - `4_extraction.py`: Collects information from LaTeX strings needed to reconstruct and compute the formula in a Computer Algebra System (CAS, SymPy in our case).
    - `5_validation.py`: Computes formulas and finds symbolic values (limits of series and continued fractions) in terms of the constant of interest.
    - `6_to_recurrence.py`: Computes the first 200 terms of each series in preparation for conversion to polynomial recurrences.
