@@ -19,7 +19,7 @@ A multi-stage pipeline extracts formulas calculating the constant of interest (e
 
 1. Scraping: equations are collected from arXiv papers.
 2. Retrieval: equations are scanned for certain regular expressions.
-3. Classification: an LLM decides whether each formula calculates the constant of interest, and the classifies the type of formula (series or continued fraction).
+3. Classification: an LLM decides whether each equation contains a formula that calculates the constant of interest, then classifies the type of formula (series, continued fraction or neither).
 4. Extraction: an LLM converts LaTeX to SymPy code which can be used to reconstruct the formulas.
 5. Validation: finding the symbolic value of the formula by numerically computing it.
 6. Conversion to polynomial recurrences: via [RISC's tool](https://risc.jku.at/sw/guess/) (Mathematica).  
