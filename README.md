@@ -22,7 +22,7 @@ A multi-stage pipeline extracts formulas calculating the constant of interest (e
 3. Classification: an LLM decides whether each formula calculates the constant of interest, and the classifies the type of formula (series or continued fraction).
 4. Extraction: an LLM converts LaTeX to SymPy code which can be used to reconstruct the formulas.
 5. Validation: finding the symbolic value of the formula by numerically computing it.
-6. Conversion to polynomial recurrences: via RISC's tool (Mathematica).
+6. Conversion to polynomial recurrences: via [RISC's tool](https://risc.jku.at/sw/guess/) (Mathematica).  
 
 ### Unification
 
