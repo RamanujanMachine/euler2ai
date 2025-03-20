@@ -24,7 +24,7 @@ class PCF():
         convergence_rate() to obtain the convergence rate metric.
         delta() to obtain the irrationality measure metric.
     """
-    def __init__(self, a, b, inflated_by=None):
+    def __init__(self, a, b, variable=n, inflated_by=None):
         """
         Initialize a PCF object with partial denominator a and partial numerator b.
 
@@ -34,8 +34,8 @@ class PCF():
             * inflated_by: a rational function by which the PCF was previously inflated
                 (for internal use)
         """
-        self.a = sp.simplify(sp.cancel(sp.sympify(a)))
-        self.b = sp.simplify(sp.cancel(sp.sympify(b)))
+        self.a = sp.simplify(sp.cancel(sp.sympify(a.subs({variable: n}))))
+        self.b = sp.simplify(sp.cancel(sp.sympify(b.subs({variable: n}))))
         if inflated_by is None:
             inflated_by = sp.Integer(1)
         self.inflate_to_integer_polynomials = sp.simplify(sp.cancel(
@@ -74,7 +74,12 @@ class PCF():
         """
         term = term.subs({variable: n + start}) # this way n=0 is the first term
         p, q = (term / term.subs({n: n-1})).cancel().simplify().as_numer_denom()
-        return PCF(p + q, - p * q.subs({n: n-1}))
+        a = p + q
+        b = - p * q.subs({n: n-1})
+        shift = max([z for z in sp.solve(b.cancel().simplify(), n) if isinstance(z, sp.Integer)] + [0])
+        print(shift)
+        return PCF(a.subs({n: n + shift}), b.subs({n: n + shift}))
+        # return PCF(a, b)
     
     # @staticmethod
     # def from_matrix(matrix):

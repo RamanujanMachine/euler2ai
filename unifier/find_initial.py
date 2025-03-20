@@ -3,26 +3,27 @@ import sympy as sp
 n = sp.symbols('n')
 
 
-def find_initial(s, pcf, start_index):
+def find_initial(term, pcf, start, variable=n):
     """
-    Finds the initial conditions needed for the PCF recurrence to compute
-    the series, given that the recurrence was found by RISC's tool
-    for fitting polynomial recurrences to rational sequences.
+    Finds the initial conditions needed for the PCF (its recurrence) to compute
+    the series, given that it was derived from the series
+    (e.g. by RISC's tool for fitting polynomial recurrences to rational sequences).
 
-    This shows the recurrence represents the series from which it was derived.
+    This shows the PCF represents the series from which it was derived.
 
     Args:
-        * s: summand function of the series, an expression in terms of sympy variable n
-        * pcf: PCF resulting from a fit by RISC's tool
-        * start_index: start index for summation of the series
+        * term: summand function of the series, an expression in terms of sympy variable n
+        * pcf: PCF, resulting from e.g. a fit to the series' approximants by RISC's tool
+        * start: start index for summation of the series
+        * variable: variable of the series.
 
     Returns:
         A 2x2 matrix containing the appropriate initial conditions
-        for computation of the series via the recurrence
+        for computation of the series via the PCF
     """
-    S0 = s.subs({n: start_index})
-    S1 = S0 + s.subs({n: start_index + 1})
-    S2 = S1 + s.subs({n: start_index + 2})
+    S0 = term.subs({variable: start})
+    S1 = S0 + term.subs({variable: start + 1})
+    S2 = S1 + term.subs({variable: start + 2})
 
     a = pcf.a
     b = pcf.b

@@ -34,7 +34,7 @@ def process_arg_dict(arg_dict):
         return
     
     formula, computable = build_formula(eqdict['type'], eqdict['info'])
-    save_dict = {'formula': str(formula), 'computable': computable}
+    save_dict = {'type': eqdict['type'], 'formula': str(formula), 'computable': computable}
 
     if not os.path.exists(arg_dict['file_destin_dir']):
         os.makedirs(arg_dict['file_destin_dir'])
@@ -69,8 +69,8 @@ def process_arg_dict(arg_dict):
                 save_dict['error'] = str(e)
         else:
             identification = None
-        save_dict['eval'] = str(evaluated_formula) if evaluated_formula is not None else None
-        save_dict['id'] = str(identification) if identification is not None else None 
+        save_dict['eval'] = str(evaluated_formula)[:100] if evaluated_formula is not None else None
+        save_dict['id'] = str(identification) if identification is not None else None
 
     with open(arg_dict['file_destin'], 'w') as f:
             json.dump(save_dict, f)
@@ -102,13 +102,13 @@ if __name__ == "__main__":
                 if total % PRINT_EVERY == 0:
                     print(total, file.replace('.json', ''))
 
-    print(f'Total number of formulas to check: {total}')
+    print(f'Total number of formulas to validate: {total}')
     print('Running...')
 
     for i in range(0, len(job), NUM_WORKERS):
         processes = []
         for arg_dict in job[i:i+NUM_WORKERS]:
-            process = Process(target=process_arg_dict, args=(arg_dict,))
+            process = Process(target=process_arg_dict, args=(arg_dict,), name=arg_dict['file_origin'])
             processes.append(process)
             process.start()
         for process in processes:

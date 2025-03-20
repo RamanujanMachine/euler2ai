@@ -1,4 +1,5 @@
-from .utils.coboundary_solver_utils import get_limit_from_i, check_coboundary, get_rational_hypotheses, CoboundaryError
+from .utils.coboundary_solver_utils import get_limit_from_i, check_coboundary, CoboundaryError
+from .utils.rational_fit_utils import get_rational_hypotheses
 from .utils.matrix_utils import matrix_denominator_lcm, matrix_gcd
 import sympy as sp
 from itertools import product
