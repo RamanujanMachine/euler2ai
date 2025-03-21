@@ -1,11 +1,12 @@
 from .pcf import PCF
 from .utils.rational_fit_utils import get_rational_hypotheses, NoSolutionError
 from .utils.recurrence_transforms_utils import mobius
+from .utils.matrix_utils import projectively_simplify
 import sympy as sp
 n = sp.symbols('n')
 
 
-class NOTRationalFunctionError(Exception):
+class NotRationalFunctionError(Exception):
     pass
 
 
@@ -30,6 +31,14 @@ class PCFFromSeries():
         self.variable = variable
         assert {self.variable} == self.term.free_symbols, \
             "Variable not found in term. Make sure the term is a function of the variable."
+        
+        # we need the series to be nonzero
+        shifted_start = 0
+        while self.term.subs({self.variable: self.start}) == 0:
+            self.start += 1
+            shifted_start += 1
+            if shifted_start >= 5:
+                raise ValueError('The term zeros out for too many indices, double check start is correct')
         self.series = sp.Sum(self.term, (self.variable, self.start, n))
         self.get_pcf(rational_fit_depth=rational_fit_depth)
 
@@ -52,7 +61,7 @@ class PCFFromSeries():
             try:
                 hypotheses = get_rational_hypotheses(nums, dens, initial_index=self.start)
             except NoSolutionError:
-                raise NOTRationalFunctionError(
+                raise NotRationalFunctionError(
                     f"""Cannot create polynomial continued fraction:
                     the quotient term(n+1)/term(n) is not deemed rational by SymPy
                     and a rational fit to the first {rational_fit_depth} fails."""
@@ -65,7 +74,7 @@ class PCFFromSeries():
         q0 = q.subs({n: 0}).doit()
         s0 = self.term.subs({self.variable: self.start}).doit()
         s1 = self.term.subs({self.variable: self.start + 1}).doit()
-        self.initial = sp.Matrix([[s0, q0 * (s0 + s1)], [1, q0]])
+        self.initial = projectively_simplify(sp.Matrix([[s0, q0 * (s0 + s1)], [1, q0]]))
 
     def compare_approximants(self, depth):
         r"""
@@ -84,3 +93,4 @@ class PCFFromSeries():
         Get the value of the PCF given the value of the series.
         """
         return mobius(self.pcf.A() * self.initial.inv(), series_value).simplify()
+

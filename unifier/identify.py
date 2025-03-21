@@ -1,4 +1,8 @@
-from .utils.LIReC_utils.lirec_identify import lirec_identify, lirec_identify_result_to_sympy, MIN_PSLQ_DPS
+from .utils.LIReC_utils.lirec_identify import (
+    lirec_identify,
+    lirec_identify_result_to_sympy,
+    MIN_PSLQ_DPS
+    )
 from .pcf import PCF
 import mpmath as mm
 

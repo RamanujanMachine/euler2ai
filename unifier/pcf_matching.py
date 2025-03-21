@@ -1,5 +1,5 @@
 from .coboundary_solver import CobViaLim, PCFCobViaLim
-from .utils.coboundary_solver_utils import NoSolutionError
+from .utils.rational_fit_utils import NoSolutionError
 from .recurrence_transforms import FoldToPCFTransform, CobTransform, RecurrenceTransform, CobTransformShift
 from .utils.recurrence_transforms_utils import mobius
 from .pcf import PCF

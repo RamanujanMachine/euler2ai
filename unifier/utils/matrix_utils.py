@@ -18,7 +18,7 @@ def matrix_denominator_lcm(matrix):
     of the elements of a sympy matrix
     """
 
-    return sp.lcm([cell.cancel().as_numer_denom()[1] for cell in matrix])
+    return sp.lcm([cell.cancel().as_numer_denom()[1] or 1 for cell in matrix])
 
 
 def matrix_gcd(matrix):
@@ -28,3 +28,9 @@ def matrix_gcd(matrix):
     """
 
     return sp.gcd([cell.cancel() for cell in matrix])
+
+
+def projectively_simplify(matrix):
+    matrix = matrix * matrix_denominator_lcm(matrix)
+    matrix = matrix / matrix_gcd(matrix)
+    return matrix.applyfunc(sp.simplify)

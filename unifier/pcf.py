@@ -1,7 +1,6 @@
 from .utils.LIReC_utils.pcf import PCF as LPCF
 # from .utils.LIReC_utils.pcf import IllegalPCFException
 from .utils.pcf_utils import content
-# from .utils.recurrence_transforms_utils import CobTransformAsPCF
 import mpmath as mm
 import gmpy2
 import sympy as sp
@@ -34,8 +33,8 @@ class PCF():
             * inflated_by: a rational function by which the PCF was previously inflated
                 (for internal use)
         """
-        self.a = sp.simplify(sp.cancel(sp.sympify(a.subs({variable: n}))))
-        self.b = sp.simplify(sp.cancel(sp.sympify(b.subs({variable: n}))))
+        self.a = sp.simplify(sp.cancel(sp.sympify(a).subs({variable: n})))
+        self.b = sp.simplify(sp.cancel(sp.sympify(b).subs({variable: n})))
         if inflated_by is None:
             inflated_by = sp.Integer(1)
         self.inflate_to_integer_polynomials = sp.simplify(sp.cancel(
@@ -64,31 +63,6 @@ class PCF():
         Create a new PCF object with the variables substituted by the values in dict.
         """
         return PCF(self.a.subs(dict), self.b.subs(dict))
-    
-    @staticmethod
-    def from_series(term, start=0, variable=n):
-        """
-        Construct a PCF from a series term.
-        Note: sympy is not always able to simplify expressions properly,
-        so may not work.
-        """
-        term = term.subs({variable: n + start}) # this way n=0 is the first term
-        p, q = (term / term.subs({n: n-1})).cancel().simplify().as_numer_denom()
-        a = p + q
-        b = - p * q.subs({n: n-1})
-        shift = max([z for z in sp.solve(b.cancel().simplify(), n) if isinstance(z, sp.Integer)] + [0])
-        print(shift)
-        return PCF(a.subs({n: n + shift}), b.subs({n: n + shift}))
-        # return PCF(a, b)
-    
-    # @staticmethod
-    # def from_matrix(matrix):
-    #     """
-    #     Construct a PCF from a 2x2 matrix.
-    #     """
-    #     transform = CobTransformAsPCF(matrix)
-    #     mat = transform(matrix)
-    #     return PCF(mat[1, 1], mat[0, 1])
 
     def CM(self):
         """

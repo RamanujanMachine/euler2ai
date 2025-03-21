@@ -1,6 +1,6 @@
 from .pcf_matching import match_pcfs, CannotFoldError
 from .utils.coboundary_graph_utils import collect_candidate_nodes, reorder_connected_components, get_trajectories
-from .utils.coboundary_solver_utils import NoSolutionError
+from .utils.rational_fit_utils import NoSolutionError
 from .pcf import PCF
 from .recurrence_transforms import FoldTransform
 

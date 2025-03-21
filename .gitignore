@@ -3,3 +3,4 @@ build
 *.toml
 *.egg-info
 *.ipynb
+*.txt
