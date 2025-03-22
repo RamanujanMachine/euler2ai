@@ -193,15 +193,15 @@ class PCF():
             * limit: the limit of the PCF, sympy object
         """
         if limit is None:
-            limit, prec = self.limit(2 * depth)
-            approximant, _ = self.limit(depth, prec=prec)
+            limit, prec = self.limit(2 * depth, return_sympy_rational=True)
+            approximant, _ = self.limit(depth, prec=prec, return_sympy_rational=True)
         else:
-            approximant, prec = self.limit(depth)
-            limit = mp(precision=prec).mpf(limit.evalf(prec))
+            approximant, prec = self.limit(depth, return_sympy_rational=True)
+            # limit = mp(precision=prec).mpf(limit.evalf(prec))
         if verbose:
             print(f'Precision of step matrix: {prec}')
         cur_mp = mp(precision=prec)
-        return cur_mp.fabs(1 / depth * cur_mp.log(cur_mp.fabs(approximant - limit)))
+        return cur_mp.fabs(1 / depth * cur_mp.log(cur_mp.fabs((approximant - limit).evalf(prec))))
 
     def delta(self, depth=2000, limit=None, verbose=False):
         """

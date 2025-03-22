@@ -5,7 +5,17 @@ from sympy import Symbol, parse_expr, sympify, pi
 from operator import add, mul
 
 
-def lirec_identify(values, degree=2, order=1, min_prec=None, min_roi=2, isolate=0, strict=False, wide_search=False, pcf_search=False, see_also=False, verbose=False):
+def lirec_identify(values,
+                   degree=2,
+                   order=1,
+                   min_prec=None,
+                   min_roi=2,
+                   isolate=0,
+                   strict=False,
+                   wide_search=False,
+                   pcf_search=False,
+                   see_also=False,
+                   verbose=False):
         if not values: # SETUP - organize values
             return []
         numbers, named, pcfs = {}, {}, {}

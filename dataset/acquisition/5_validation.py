@@ -10,11 +10,11 @@ import os
 NUM_WORKERS = min(8, MAX_WORKERS)
 
 # directory paths
-BASE_INPUT = BASE_DIR + '/4_extraction'         # classification directory
-BASE_OUTPUT = BASE_DIR + '/5_validation'        # extraction output directory
+BASE_INPUT = BASE_DIR + '/4_extraction'         # extraction directory
+BASE_OUTPUT = BASE_DIR + '/5_validation'        # validation output directory
 
 # other options - normally no need to change
-TIMEOUT = 10
+TIMEOUT = 30
 EXIST_OK = True
 PRINT_EVERY = 5
 TEST = False
@@ -41,7 +41,7 @@ def process_arg_dict(arg_dict):
 
     if not computable:
         save_dict['eval'] = None
-        save_dict['id'] = None
+        save_dict['limit'] = None
     else:
         try:
             if eqdict['type'] == 'series':
@@ -70,7 +70,7 @@ def process_arg_dict(arg_dict):
         else:
             identification = None
         save_dict['eval'] = str(evaluated_formula)[:100] if evaluated_formula is not None else None
-        save_dict['id'] = str(identification) if identification is not None else None
+        save_dict['limit'] = str(identification) if identification is not None else None
 
     with open(arg_dict['file_destin'], 'w') as f:
             json.dump(save_dict, f)

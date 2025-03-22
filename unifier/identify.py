@@ -1,7 +1,6 @@
 from .utils.LIReC_utils.lirec_identify import (
     lirec_identify,
-    lirec_identify_result_to_sympy,
-    MIN_PSLQ_DPS
+    lirec_identify_result_to_sympy
     )
 from .pcf import PCF
 import mpmath as mm
@@ -12,7 +11,7 @@ import mpmath as mm
 
 mm.mp.dps = 16000
 MPMATH_PI = str(mm.pi)
-mm.mp.dps = MIN_PSLQ_DPS
+mm.mp.dps = 100
 
 
 def identify(value, constants=[MPMATH_PI], precision=None, digits=1000,
@@ -97,7 +96,7 @@ def identify_pcf_limit(pcf: PCF,
                        constants=[MPMATH_PI],
                        digits=1000,
                        convergence_threshold=5e-1,
-                       auto_depth=False,
+                       auto_depth=True,
                        min_roi=2,
                        as_sympy=True,
                        max_iters=3,

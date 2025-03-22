@@ -93,4 +93,3 @@ class PCFFromSeries():
         Get the value of the PCF given the value of the series.
         """
         return mobius(self.pcf.A() * self.initial.inv(), series_value).simplify()
-
