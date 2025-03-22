@@ -20,4 +20,4 @@ CONSTANT = 'pi' # currently only this constant is supported,
 MAX_WORKERS = 10 # maximum number of workers for multiprocessing
 USE_GUESS = False # whether to use RISC's tool for fitting recurrences (requires access and Mathematica)
 # if True, prepares data for Mathematica script 6_to_recurrence.wl when running 6_to_recurrence.py
-# If using Guess: !!! MAKE SURE TO CONFIGURE !!! BASE_DIR and PATH_TO_GUESS in 6_to_recurrence.wl
+# If using Guess: !!! MAKE SURE TO CONFIGURE !!! baseDir and GuessPath in 6_to_recurrence.wl

@@ -1,4 +1,4 @@
-from .utils.matrix_utils import matrix_denominator_lcm
+from .utils.matrix_utils import projectively_simplify
 import sympy as sp
 n = sp.symbols('n')
 
@@ -30,6 +30,4 @@ def find_initial(term, pcf, start, variable=n):
     x = -b.subs({n: 2}) / a.subs({n: 2}) * ( (S2 - S0) / (S2 - S1) )
 
     initial = sp.Matrix([[S0, x*S1], [1, x]]) * pcf.CM().subs({n: 1}).inv()
-    initial = (initial * matrix_denominator_lcm(initial)).applyfunc(sp.cancel)
-
-    return initial
+    return projectively_simplify(initial)

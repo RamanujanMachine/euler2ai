@@ -16,6 +16,8 @@ class PCFFromSeries():
     After initialization, obtain the PCF by accessing the attribute `pcf`,
     and the initial conditions matrix for computation of the series via the PCF
     by accessing the attribute `initial`.
+    Using `initial`, the first approximant computed mobius(Initial * PCF.CM().subs({n:1}))
+    is equal to the third term of the series (the first two approximants are stored in `initial`).
     """
     def __init__(self, term, start, variable=n, rational_fit_depth=50):
         r"""
