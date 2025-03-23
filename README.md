@@ -23,7 +23,7 @@ A multi-stage pipeline extracts formulas calculating the constant of interest (e
 4. Extraction: an LLM converts LaTeX to SymPy code which can be used to reconstruct the formulas.
 5. Validation: finding the symbolic value of the formula by numerically computing it.
 6. Conversion to polynomial recurrences: via [RISC's tool](https://risc.jku.at/sw/guess/) (Mathematica).
-7. Merging instances of identical canonical form recurrences.  
+7. Conversion to canonical form: recurrences are normalized to have integer coefficient polynomials.  
 
 ### Unification
 
