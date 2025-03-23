@@ -2,16 +2,16 @@ from unifier.identify import identification_loop
 from dataset_utils.formula_utils import build_formula
 from config import BASE_DIR, MAX_WORKERS
 from multiprocessing import Process
-import json
 import os
+import json
 
 
 # multiprocessing settings
 NUM_WORKERS = min(8, MAX_WORKERS)
 
 # directory paths
-BASE_INPUT = BASE_DIR + '/4_extraction'         # extraction directory
-BASE_OUTPUT = BASE_DIR + '/5_validation'        # validation output directory
+BASE_INPUT = os.path.join(BASE_DIR, '4_extraction')         # extraction directory
+BASE_OUTPUT = os.path.join(BASE_DIR, '5_validation')        # validation output directory
 
 # other options - normally no need to change
 TIMEOUT = 30
@@ -60,7 +60,7 @@ def process_arg_dict(arg_dict):
         if evaluated_formula is not None:
             try:
                 if eqdict['type'] == 'series':
-                    identification = identification_loop(str(evaluated_formula), 100)
+                    identification = identification_loop(str(evaluated_formula), 200)
                 elif eqdict['type'] == 'cf':
                     identification = identification_loop(str(evaluated_formula)[:precision], precision-1)
             except Exception as e:
@@ -73,7 +73,7 @@ def process_arg_dict(arg_dict):
         save_dict['limit'] = str(identification) if identification is not None else None
 
     with open(arg_dict['file_destin'], 'w') as f:
-            json.dump(save_dict, f)
+        json.dump(save_dict, f)
     return
 
 

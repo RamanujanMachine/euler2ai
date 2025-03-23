@@ -21,13 +21,16 @@ def find_initial(term, pcf, start, variable=n):
         A 2x2 matrix containing the appropriate initial conditions
         for computation of the series via the PCF
     """
-    S0 = term.subs({variable: start})
-    S1 = S0 + term.subs({variable: start + 1})
-    S2 = S1 + term.subs({variable: start + 2})
-
-    a = pcf.a
-    b = pcf.b
-    x = -b.subs({n: 2}) / a.subs({n: 2}) * ( (S2 - S0) / (S2 - S1) )
-
-    initial = sp.Matrix([[S0, x*S1], [1, x]]) * pcf.CM().subs({n: 1}).inv()
+    # make sure the series does not zero out at the start
+    shifted_start = 0
+    while term.subs({variable: start}) == 0:
+        start += 1
+        shifted_start += 1
+        if shifted_start >= 5:
+            raise ValueError('The term zeros out for too many indices, double check start is correct')
+    s0 = term.subs({variable: start})
+    s1 = s0 + term.subs({variable: start + 1})
+    s2 = s1 + term.subs({variable: start + 2})
+    x = -pcf.b.subs({n: 1}) / pcf.a.subs({n: 1}) * ( (s2 - s0) / (s2 - s1) )
+    initial = sp.Matrix([[s0, x*s1], [1, x]])
     return projectively_simplify(initial)

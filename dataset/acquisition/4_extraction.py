@@ -12,8 +12,8 @@ from multiprocessing import Pool
 NUM_WORKERS = min(8, MAX_WORKERS)
 
 # directory paths
-BASE_INPUT = BASE_DIR + '/3_classification'         # classification directory
-BASE_OUTPUT = BASE_DIR + '/4_extraction'            # extraction output directory
+BASE_INPUT = os.path.join(BASE_DIR, '3_classification')         # classification directory
+BASE_OUTPUT = os.path.join(BASE_DIR, '4_extraction')            # extraction output directory
 
 # other options - normally no need to change
 EXIST_OK = True

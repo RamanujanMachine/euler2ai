@@ -11,22 +11,26 @@ class NotRationalFunctionError(Exception):
 
 
 class PCFFromSeries():
-    r"""
-    This class is used to create a polynomial continued fraction from a series.
-    After initialization, obtain the PCF by accessing the attribute `pcf`,
-    and the initial conditions matrix for computation of the series via the PCF
-    by accessing the attribute `initial`.
-    Using `initial`, the first approximant computed mobius(Initial * PCF.CM().subs({n:1}))
-    is equal to the third term of the series (the first two approximants are stored in `initial`).
-    """
     def __init__(self, term, start, variable=n, rational_fit_depth=50):
         r"""
+        This class is used to create a polynomial continued fraction from a series.
+        After initialization, obtain the PCF by accessing the attribute `pcf`,
+        and the initial conditions matrix for computation of the series via the PCF
+        by accessing the attribute `initial`.
+        Using `initial`, the first approximant computed mobius(Initial * PCF.CM().subs({n:1}))
+        is equal to the third term of the series (the first two approximants are stored in `initial`).
+
         Args:
             term: The term of the series.
             start: The starting index of the series.
             variable: The variable of the series.
             rational_fit_depth: The depth to which a rational fit is attempted for term(n+1)/term(n) if
             SymPy fails to express this quotient as a rational function on its own.
+
+        Raises:
+            NotRationalFunctionError: If the quotient term(n+1)/term(n) is not deemed rational by SymPy
+            and a rational fit to the first `rational_fit_depth` fails.
+            ValueError: If the term zeros out for too many indices, double check start is correct.
         """
         self.term = term
         self.start = start

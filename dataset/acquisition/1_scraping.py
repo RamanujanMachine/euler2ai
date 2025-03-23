@@ -11,7 +11,7 @@ START_INDEX = 0
 END_INDEX = None
 
 # output
-OUTPUT_DIR = BASE_DIR + '/1_scraping'
+OUTPUT_DIR = os.path.join(BASE_DIR, '1_scraping')
 
 # settings
 DIR_SIZE = 100
@@ -36,15 +36,16 @@ for i in range(0, len(ARXIV_IDS_OF_INTEREST), DIR_SIZE):
         break
     ids = ARXIV_IDS_OF_INTEREST[i:i+DIR_SIZE]
     dir_ids = [id.replace('/', '_') for id in ids]
-    dir = rf"{OUTPUT_DIR}/{i}-{i + len(ids) - 1}__{dir_ids[0]}__to__{dir_ids[-1]}"
+    dir = os.path.join(OUTPUT_DIR, rf"{i}-{i + len(ids) - 1}__{dir_ids[0]}__to__{dir_ids[-1]}")
     os.makedirs(dir, exist_ok=True)
     for ind, (id, dir_id) in enumerate(zip(ids, dir_ids), start=i):
         if ind < START_INDEX:
             continue
         if END_INDEX is not None and ind > END_INDEX:
             break
-        filename = f"{dir}/{ind}__{dir_id}.json"
+        filename = os.path.join(dir, f"{ind}__{dir_id}.json")
         if os.path.exists(filename):
+            print(f'{ind}: {id} already exists')
             continue
         if ind % SLEEP_EVERY == 0 and ind != 0:
             time.sleep(SLEEP_TIME)

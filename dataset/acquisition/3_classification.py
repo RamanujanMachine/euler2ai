@@ -10,8 +10,8 @@ NUM_WORKERS = min(8, MAX_WORKERS)
 CHUNKSIZE = 1
 
 # directory paths
-BASE_INPUT = BASE_DIR + '/2_retrieval'          # retrieval directory
-BASE_OUTPUT = BASE_DIR + '/3_classification'    # classification output directory
+BASE_INPUT = os.path.join(BASE_DIR, '2_retrieval')          # retrieval directory
+BASE_OUTPUT = os.path.join(BASE_DIR, '3_classification')    # classification output directory
 
 # other options - normally no need to change
 EXIST_OK = True

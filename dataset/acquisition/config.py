@@ -12,12 +12,13 @@ ARXIV_IDS_OF_INTEREST = [ # list or path to pickled list of arxiv ids
     '2110.03651',
     '0807.0872',
     '1103.6022',
-    '1806.03346',
+    # '1806.03346',
     ]
 OPENAI_API_KEY = '' # fill in with your OpenAI API key
 CONSTANT = 'pi' # currently only this constant is supported,
                 # since retrieval involves removing other constants such as sqrt(2)
-MAX_WORKERS = 10 # maximum number of workers for multiprocessing
+MAX_WORKERS = 10 # maximum number of workers for multiprocessing, machine dependent
 USE_GUESS = False # whether to use RISC's tool for fitting recurrences (requires access and Mathematica)
 # if True, prepares data for Mathematica script 6_to_recurrence.wl when running 6_to_recurrence.py
-# If using Guess: !!! MAKE SURE TO CONFIGURE !!! baseDir and GuessPath in 6_to_recurrence.wl
+
+# NOTE: If using Guess: !!! MAKE SURE TO CONFIGURE !!! baseDir and GuessPath when running 6_to_recurrence.wl

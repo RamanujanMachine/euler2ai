@@ -1,28 +1,40 @@
-from unifier import PCF
+from unifier import PCF, find_initial
+from unifier.utils.recurrence_transforms_utils import mobius
+from dataset_utils.formula_utils import unpack_series
 from config import BASE_DIR, USE_GUESS
-import json
 import sympy as sp
+from sympy.parsing.mathematica import parse_mathematica
 import os
-import re
+import pandas as pd
+import json
+n = sp.symbols('n')
 
 
-OUTPUT_JSON = BASE_DIR + '/pcfs.json'
-OUTPUT_PKL = BASE_DIR + '/pcfs.pkl'
+OUTPUT_JSON = os.path.join(BASE_DIR, 'pcfs' + ('-GUESS' if USE_GUESS else '') + '.json')
+OUTPUT_PKL = os.path.join(BASE_DIR, 'pcfs' + ('-GUESS' if USE_GUESS else '') + '.pkl')
 
 
 def collect_recurrence(recurrence_str):
     r"""
-    Collect the polynomial coefficients from a RISC Guess result.
+    Collect the polynomial coefficients from a RISC Guess result,
+    which is a Mathematica string of a recurrence relation.
+
+    Example:
+    "(-3/2 - n)*f[n] - f[1 + n] + (5/2 + n)*f[2 + n]" --> {0: -n - 3/2, 2: n + 5/2, 1: -1}
     """
-    recurrence_str = recurrence_str.replace(r'\/', '/')
-    pattern = r'\((.*?)\)\*f\[(\d*\s*\+\s*)?n\]'
-
-    matches = re.findall(pattern, recurrence_str)
-
+    # Parse the Mathematica string into a SymPy expression
+    expr = parse_mathematica(recurrence_str)
+    
+    # Extract coefficients
     coefficients = {}
-    for coeff, shift in matches:
-        shift = int(shift.strip().split('+')[0]) if shift.strip() else 0
-        coefficients[shift] = sp.sympify(coeff.replace('^', '**'))
+    print(expr.as_ordered_terms())
+    for term in expr.as_ordered_terms():
+        coeff, f_term = term.args
+        if f_term:
+            # Extract the shift from f[n + shift]
+            shift_expr = f_term.args[0] - sp.symbols('n')
+            shift = int(shift_expr)
+        coefficients[shift] = coeff
 
     return coefficients
 
@@ -34,10 +46,10 @@ def collect_pcf(recurrence_str):
     coefficients = collect_recurrence(recurrence_str)
 
     if {0, 1, 2} - set(coefficients) or 3 in coefficients:
-        raise ValueError('Recurrence not of order 2')
+        raise ValueError('Recurrence not of order 2.')
 
     pcf = PCF((- coefficients[1] / coefficients[2]),
-              (- coefficients[0] / coefficients[2])).canonical(keep_inflated_by=False)
+              (- coefficients[0] / coefficients[2])).canonical(keep_inflated_by=False).subs({n: n - 1})
     
     return pcf
 
@@ -60,9 +72,9 @@ if __name__ == "__main__":
             """Output files already exist. Please remove them from 
             the directory before rerunning the script.""")
 
-    EXTRACTION_DIR = BASE_DIR + '/4_extraction'
-    VALIDATION_DIR = BASE_DIR + '/5_validation'
-    TO_RECURRENCE_DIR = BASE_DIR + '/6_to_recurrence' + ('-GUESS-recurrences' if USE_GUESS else '')
+    EXTRACTION_DIR = os.path.join(BASE_DIR, '4_extraction')
+    VALIDATION_DIR = os.path.join(BASE_DIR, '5_validation')
+    TO_RECURRENCE_DIR = os.path.join(BASE_DIR, '6_to_recurrence' + ('-GUESS-recurrences' if USE_GUESS else ''))
 
         # collect PCFs from VALIDATION_DIR
         # collect pcfs from TO_RECURRENCE_DIR
@@ -71,7 +83,7 @@ if __name__ == "__main__":
         # where
         # source = {id, file, line, equation, type, formula, formula_limit, local_file}
         # create a pandas dataframe
-        # merge_sources according to distinct a, b pairs
+        # merge_sources according to distinct a, b pairs - left this out for now
 
     pcfs = {}
 
@@ -95,6 +107,7 @@ if __name__ == "__main__":
 
     if not USE_GUESS:
         # collect pcfs from TO_RECURRENCE_DIR
+        print(f'Collecting pcfs from {TO_RECURRENCE_DIR}')
         for root, _, files in os.walk(TO_RECURRENCE_DIR):
             for file in files:
                 if file.endswith('.json'):
@@ -104,6 +117,7 @@ if __name__ == "__main__":
                     pcfs[file] = {'a': a, 'b': b, 'limit': rec_dic['limit']}
         
         # collect data from VALIDATION_DIR
+        print(f'Collecting data from {VALIDATION_DIR}')
         for root, _, files in os.walk(VALIDATION_DIR):
             for file in files:
                 if file in pcfs and file.endswith('.json'):
@@ -115,8 +129,9 @@ if __name__ == "__main__":
                         'formula_limit': valid_dic['limit'],
                         }
 
-    elif USE_GUESS: # CONTINUE HERE !!!!!! need to correct find_initial.py
+    elif USE_GUESS:
         # collect pcfs from TO_RECURRENCE_DIR
+        print(f'Collecting pcfs from {TO_RECURRENCE_DIR}')
         for root, _, files in os.walk(TO_RECURRENCE_DIR):
             for file in files:
                 if file.endswith('.json'):
@@ -124,12 +139,14 @@ if __name__ == "__main__":
                         rec_dic = json.load(f)
                     try:
                         pcf = collect_pcf(rec_dic['recurrence'])
-                    except ValueError:
+                    except ValueError as e:
+                        print(f'Error in {file}: {e}')
                         continue
                     pcfs[file] = {'a': str(pcf.a), 'b': str(pcf.b)}
         
         # collect data from VALIDATION_DIR
         # and remember to add pcfs collected directly from the literature
+        print(f'Collecting data from {VALIDATION_DIR}')
         for root, _, files in os.walk(VALIDATION_DIR):
             for file in files:
                 if file.endswith('.json'):
@@ -150,16 +167,23 @@ if __name__ == "__main__":
                             }
                     
                     elif valid_dic['type'] == 'series' and file in pcfs:
+                        pcf = PCF(sp.sympify(pcfs[file]['a']), sp.sympify(pcfs[file]['b']))
+                        term, start, variable = unpack_series(sp.sympify(valid_dic['formula']))
+                        initial = find_initial(term, pcf, start, variable)
+                        pcfs[file]['limit'] = str(mobius(pcf.A() * initial.inv(),
+                                                         sp.sympify(valid_dic['limit'])).simplify())
                         pcfs[file]['source'] = {
                             'type': 'series',
                             'formula': valid_dic['formula'],
                             'formula_limit': valid_dic['limit'],
                             }
-        
-        # direct are missing limit
-    # all are missing source metadata
-    
+                        
+                        if file == "10__0807.0872__histoPi-fin-1.tex__1.json":
+                            print('here')
+            
     # collect data from EXTRACTION_DIR
+    # all pcfs are missing source metadata
+    print(f'Collecting metadata from {EXTRACTION_DIR}')
     i = 0
     for root, _, files in os.walk(EXTRACTION_DIR):
         for file in files:
@@ -173,11 +197,17 @@ if __name__ == "__main__":
                     'file': extr_dic['file'],
                     'line': extr_dic['l'],
                     'equation': extr_dic['e'],
+                    'local_file': file,
                     })
                 
     with open(OUTPUT_JSON, 'w') as f:
         json.dump(pcfs, f, indent=4)
 
-
-    # create a pandas dataframe # CONTINUE HERE
-
+    dataframe = pd.DataFrame.from_dict(pcfs, orient='index')
+    pcfsdf = pd.DataFrame.from_dict(pcfs, orient='index').reset_index().rename(columns={'index': 'local_file'})
+    pcfsdf = pcfsdf.reindex(columns=['a', 'b', 'limit', 'source', 'local_file'])
+    pcfsdf['line'] = pcfsdf['source'].apply(lambda x: x['line'])
+    pcfsdf_sorted = pcfsdf.sort_values(by=['local_file', 'line'])
+    pcfsdf = pcfsdf_sorted.drop(columns=['local_file', 'line']).reset_index(drop=True)
+    pcfsdf.to_pickle(OUTPUT_PKL)
+    # pcfsdf.to_json(OUTPUT_JSON.replace('.json', 'test.json'), orient='index', indent=4)

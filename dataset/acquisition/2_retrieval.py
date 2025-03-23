@@ -18,8 +18,8 @@ NUM_WORKERS = min(6, MAX_WORKERS)
 CHUNKSIZE = 100
 
 # directory paths
-BASE_INPUT = BASE_DIR + '/1_scraping'         # scraping directory
-BASE_OUTPUT = BASE_DIR + '/2_retrieval'       # retrieval output directory
+BASE_INPUT = os.path.join(BASE_DIR, '1_scraping')         # scraping directory
+BASE_OUTPUT = os.path.join(BASE_DIR, '2_retrieval')       # retrieval output directory
 
 # other options - normally no need to change
 EXIST_OK = True

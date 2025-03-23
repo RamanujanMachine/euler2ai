@@ -59,3 +59,9 @@ def build_formula(formula_type, info):
         formula = sp.Sum(term, (variable, sp.sympify(info['start']), sp.oo))
     
     return formula, computable
+
+
+def unpack_series(series):
+    term, bounds = series.args
+    variable, start, _ = bounds.args
+    return term, start, variable
