@@ -1,6 +1,6 @@
 from unifier.identify import identification_loop
 from dataset_utils.formula_utils import build_formula
-from config import BASE_DIR, MAX_WORKERS
+from config import BASE_DIR, MAX_WORKERS, VALIDATION_TIMEOUT
 from multiprocessing import Process
 import os
 import json
@@ -14,7 +14,6 @@ BASE_INPUT = os.path.join(BASE_DIR, '4_extraction')         # extraction directo
 BASE_OUTPUT = os.path.join(BASE_DIR, '5_validation')        # validation output directory
 
 # other options - normally no need to change
-TIMEOUT = 30 # means a run can take a maximum of 4 minutes for 8 formulas. Thats 200 minutes for 400 formulas.
 PRINT_EVERY = 5
 PRINT_SKIPS = True
 
@@ -112,9 +111,9 @@ if __name__ == "__main__":
             processes.append(process)
             process.start()
         for process in processes:
-            process.join(timeout=TIMEOUT)
+            process.join(timeout=VALIDATION_TIMEOUT)
         for process in processes:
             if process.is_alive():
-                print(f"Timeout: {process.name} did not finish in {TIMEOUT} seconds.")
+                print(f"Timeout: {process.name} did not finish in {VALIDATION_TIMEOUT} seconds.")
                 process.terminate()
                 process.join()

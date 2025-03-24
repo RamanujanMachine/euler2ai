@@ -92,7 +92,6 @@ class FormulaBool(BaseModel):
 class FormulaType(Enum):
     CONTINUED_FRACTION = 'cf'
     SERIES = 'series'
-    PRODUCT = 'product'
     NEITHER = 'neither'
 
 
@@ -191,7 +190,7 @@ def extract_formula(latex_string, api_key, constant='pi',
         user_message(
             "Step 2:\n" + \
             "Determine the type of formula. " + \
-            f"Is this formula a continued fraction, a series, or a product?\n\n{latex_string}"
+            f"Is this formula a continued fraction or a series?\n\n{latex_string}"
             )
         )
     response = client.beta.chat.completions.parse(
