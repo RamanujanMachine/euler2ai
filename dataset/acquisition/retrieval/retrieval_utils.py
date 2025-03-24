@@ -1,6 +1,9 @@
-from .retrieval_regular_expressions import clean_equation, remove_equation_wrapper, \
+from .retrieval_regular_expressions import (
+    clean_equation,
+    remove_equation_wrapper,
     split_equation_environment
-from ..dataset_utils.gather_utils import apply_to_gather
+    )
+from dataset_utils.gather_utils import apply_to_gather
 import re
 from typing import Union, Callable, Optional, Dict, List
 

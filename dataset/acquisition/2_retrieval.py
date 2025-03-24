@@ -1,5 +1,9 @@
-from retrieval.retrieval_utils import build_general_pipeline_for_gather, clean_gather, \
-    sat_filter_gather, split_equations_gather
+from retrieval.retrieval_utils import (
+    build_general_pipeline_for_gather,
+    clean_gather,
+    sat_filter_gather,
+    split_equations_gather
+    )
 from retrieval.retrieval_regular_expressions import constant_computing_patterns
 from config import BASE_DIR, CONSTANT, MAX_WORKERS
 import os

@@ -16,13 +16,13 @@ BASE_INPUT = os.path.join(BASE_DIR, '3_classification')         # classification
 BASE_OUTPUT = os.path.join(BASE_DIR, '4_extraction')            # extraction output directory
 
 # other options - normally no need to change
-EXIST_OK = True
 VERBOSE_EXTRACTION = False
-PRINT_EVERY = 100
+PRINT_EVERY = 10
+PRINT_SKIPS = True
+SAVE_MESSAGES = False # whether to include the dialogue with GPT-4o / 4o mini in the output dictionaries
+
 TEST = False
 TEST_TO = 10
-PRINT_SKIPS = True
-SAVE_MESSAGES = False
 
 
 def process_eq(eqdict):

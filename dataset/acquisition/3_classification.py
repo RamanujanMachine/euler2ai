@@ -14,12 +14,12 @@ BASE_INPUT = os.path.join(BASE_DIR, '2_retrieval')          # retrieval director
 BASE_OUTPUT = os.path.join(BASE_DIR, '3_classification')    # classification output directory
 
 # other options - normally no need to change
-EXIST_OK = True
 VERBOSE = False
-PRINT_EVERY = 1000
+PRINT_EVERY = 10
 STRING_LENGTH_PER_EQUATION_LIMIT = 1500
-TEST = False
 
+TEST = False
+TEST_TO = 5
 
 process_gather = classify_gather(OPENAI_API_KEY, constant=CONSTANT, eq_length_limit=STRING_LENGTH_PER_EQUATION_LIMIT)
 
@@ -48,10 +48,10 @@ if __name__ == "__main__":
     job = []
     total = 0
     for subdir in os.listdir(BASE_INPUT):
-        if TEST and total > 5:
+        if TEST and total > TEST_TO:
                 break
         for file in os.listdir(os.path.join(BASE_INPUT, subdir)):
-            if TEST and total > 5:
+            if TEST and total > TEST_TO:
                 break
             file_destin = os.path.join(BASE_OUTPUT, subdir, file)
             if os.path.exists(file_destin):

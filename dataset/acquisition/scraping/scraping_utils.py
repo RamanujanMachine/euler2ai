@@ -1,4 +1,4 @@
-from .scraping_regular_expressions import (
+from scraping_regular_expressions import (
     equation_patterns,
     split_latex,
     char_index_to_line_mapping,

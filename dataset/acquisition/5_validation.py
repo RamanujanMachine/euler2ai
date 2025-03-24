@@ -14,12 +14,12 @@ BASE_INPUT = os.path.join(BASE_DIR, '4_extraction')         # extraction directo
 BASE_OUTPUT = os.path.join(BASE_DIR, '5_validation')        # validation output directory
 
 # other options - normally no need to change
-TIMEOUT = 30
-EXIST_OK = True
+TIMEOUT = 30 # means a run can take a maximum of 4 minutes for 8 formulas. Thats 200 minutes for 400 formulas.
 PRINT_EVERY = 5
+PRINT_SKIPS = True
+
 TEST = False
 TEST_TO = 10
-PRINT_SKIPS = True
 
 
 def process_arg_dict(arg_dict):

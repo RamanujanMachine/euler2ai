@@ -15,11 +15,10 @@ BASE_INPUT = os.path.join(BASE_DIR, '5_validation')                             
 BASE_OUTPUT = os.path.join(BASE_DIR, '6_to_recurrence' + ('-GUESS' if USE_GUESS else ''))       # to_recurrence output directory
 
 # other options - normally no need to change
-EXIST_OK = True
 PRINT_EVERY = 5
+
 TEST = False
 TEST_TO = 10
-PRINT_SKIPS = True
 
 
 def compute_series_approximants(term, start, variable, depth=200):
@@ -90,7 +89,7 @@ def process_arg_dict(arg_dict):
         return
 
     if not os.path.exists(arg_dict['file_destin_dir']):
-        os.makedirs(arg_dict['file_destin_dir'], exist_ok=EXIST_OK)
+        os.makedirs(arg_dict['file_destin_dir'], exist_ok=True)
 
     with open(arg_dict['file_destin'], 'w') as f:
             json.dump(save_dict, f)
