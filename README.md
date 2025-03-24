@@ -40,7 +40,7 @@ For a quick intro, please check out the tutorial [notebook](https://colab.resear
 
 To reproduce the results and explore the methodologies presented in the paper, follow these steps:
 
-1. **Clone the repository and install the `unifier` package**:  
+### 1. Clone the repository and install the `unifier` package:  
    Create a new virtual environment and run
    ```bash
    git clone https://github.com/RamanujanMachine/unifying-formulas-for-math-constants.git
@@ -55,20 +55,20 @@ To reproduce the results and explore the methodologies presented in the paper, f
    ```
    and download the relevant data and scripts separately as needed.
 
-**Proceed to step 3 if you are interested in recreating the paper's results without testing the harvesting pipeline.**
+**Proceed to Unification if you are interested in recreating the paper's results without testing the harvesting pipeline.**
 
-2. **Harvesting formulas**:  
+### 2. Harvesting formulas:  
    The 7-step harvesting pipeline can be found under `dataset.acquisition`.  
    Under this directory, the file `config.py` contains the following settings:  
    - `BASE_DIR` (`str`): directory in which to store intermediate pipeline results, from each step.  
    - `ARXIV_IDS_OF_INTEREST` (`list[str]` or path to pickled `list[str]`): a list of arXiv ids to be scraped for formulas.  
-   - `OPENAI_API_KEY` (`str`): private OpenAI API key.  
+   - `OPENAI_API_KEY` (`str`): your private OpenAI API key. (Note: **Important!** Pipeline steps 3 and 4 below will not work without a valid API key)  
    - `CONSTANT` (`str`): (Note: Only 'pi' is currently supported.) The constant of interest for which formulas should be harvested, as a LaTeX string. 
    - `MAX_WORKERS` (`int`): for multiprocessing (configure according to your machine), can only lower the number of workers used throughout the pipeline as the minimum between this and a default value is always taken.
    - `USE_GUESS` (`bool`): whether to use RISC's tool to find the recurrences corresponding to series (True), or use a Python implementation that does not require Mathematica (False, recommended).
    - `VALIDATION_TIMEOUT` (`int`): time in seconds to allow for computation and symbolic identification of a single formula's limit.  
 
-   Customize `config.py`, then run each of the following scripts in order:
+   Customize `config.py` (`BASE_DIR` and `OPENAI_API_KEY` must be supplied), then run each of the following scripts in order:
    - `1_scraping.py`: (Note: may take a few weeks for hundreds of thousands of arXiv ids to ensure compliance with the arXiv API guidelines.) Collects LaTeX equation strings from each of the articles in the list `ARXIV_IDS_OF_INTEREST`.  
    - `2_retrieval.py`: Sifts for equations containing series or continued fractions that compute the constant of interest.
    - `3_classification.py`: Classifies each candidate formula as computing the constant of interest (passes to next step) or containing the constant's symbol (e.g. $\pi$) in an unrelated context (discarded). This step is intended to decrease the number of candidate LaTeX strings passed to the next stage.  
@@ -80,7 +80,7 @@ To reproduce the results and explore the methodologies presented in the paper, f
 
    This results in a dataframe of formulas in canonical form (PCFs) and their symbolic limits in terms of the constant of interest, along with source metadata, located in `BASE_DIR`.  
 
-3. **Unification**:  
+### 3. Unification:  
    Scripts for running this section will be found under the directory `unify`. (**NOTE: being refactored**)  
     - The result is a dataframe containing formulas as polynomial continued fractions (PCFs), with their irrationality measures ($\delta$ s) and convergence rates precomputed.
    Using the resulting dataframe, or the one used for the results shown in the paper, `pcfs_dataset/pcfs_10.1.25.pkl`, run `coboundary_graph_all`.
