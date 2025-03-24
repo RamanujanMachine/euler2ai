@@ -16,6 +16,7 @@ setup(
         'pydantic==2.10.6',
         'sympy==1.13.3',
         'tiktoken==0.9.0',
+        'pandas==2.2.3',
         ],
     python_requires=">=3.10",
 )
