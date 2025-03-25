@@ -66,7 +66,7 @@ class PCFFromSeries():
             nums, dens = zip(*measurements)
             try:
                 hypotheses = get_rational_hypotheses(nums, dens, initial_index=self.start)
-            except NoSolutionError, TypeError: # TypeError is raised if the system's matrix in not over the integers
+            except (NoSolutionError, TypeError): # TypeError is raised if the system's matrix in not over the integers
                 raise NotRationalFunctionError(
                     f"""Cannot create polynomial continued fraction:
                     the quotient term(n+1)/term(n) is not deemed rational by SymPy
