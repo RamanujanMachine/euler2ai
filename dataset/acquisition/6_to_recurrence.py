@@ -5,6 +5,7 @@ import sympy as sp
 from multiprocessing import Pool, Manager
 import os
 import json
+n = sp.symbols('n')
 
 
 # multiprocessing settings
@@ -34,6 +35,17 @@ def compute_series_approximants(term, start, variable, depth=200):
     return values
 
 
+def ab_from_string(string, sympify=False):
+    r"""
+    Extract a, b from a PCF's string.
+    """
+    a, b = string[4:-1].split(',')
+    a = a.strip(); b = b.strip()
+    if sympify:
+        a = sp.sympify(a); b = sp.sympify(b)
+    return a, b
+
+
 def process_arg_dict(arg_dict):
     if TEST and arg_dict['index'] % 1 == 0:
         print(f"{arg_dict['index']}, {arg_dict['file_origin']}")
@@ -48,6 +60,10 @@ def process_arg_dict(arg_dict):
             series = sp.sympify(formuladict['formula'])
             limit = sp.sympify(formuladict['limit'])
             term, start, variable = unpack_series(series)
+
+            if not term.subs({variable: start}).is_rational:
+                print(f'{arg_dict['file_origin']}: Series term is not rational.')
+                return
 
             if not USE_GUESS:
                 try:
@@ -80,6 +96,12 @@ def process_arg_dict(arg_dict):
                              'formula_limit': formuladict['limit']}
     
         elif 'PCF' in formuladict['formula']:
+
+            a, b = ab_from_string(formuladict['formula'], sympify=True)
+            if not a.subs({n: 1}).is_rational or not b.subs({n: 1}).is_rational:
+                print(f'{arg_dict['file_origin']}: PCF is not rational.')
+                return
+
             save_dict = {'pcf': formuladict['formula'],
                          'limit': formuladict['limit'],
                          'formula': formuladict['formula'],
