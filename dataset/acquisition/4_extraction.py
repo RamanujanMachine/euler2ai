@@ -60,16 +60,18 @@ def process_arg_dict(arg_dict):
             return
         
         else:
-            os.makedirs(arg_dict['file_destin_dir'], exist_ok=True)
-
+            created_dir = False
             for id, file_dict in orig_gather.items(): # there is only one id, so this is a loop of one iteration
                 for file_name, eq_dict_list in file_dict.items():
                     i = 0
                     for eq_dict in eq_dict_list:
-                        if eq_dict['c'] == "false": # if classified as not calculating our constant, skip
+                        if not eq_dict['c']: # if classified as not calculating our constant, skip
                             if PRINT_SKIPS:
                                 print(f"Skipping {arg_dict['file_origin']}: {eq_dict['e']}")
                             continue
+                        if not created_dir:
+                            os.makedirs(arg_dict['file_destin_dir'], exist_ok=True)
+                            created_dir = True
                         result = {'id': id, 'file': file_name, **process_eq(eq_dict)}
                         saveto = arg_dict['file_destin'].replace('.json', f'__{normalize_file_name(file_name)}__{i}.json')
                         with open(saveto, 'w') as f:

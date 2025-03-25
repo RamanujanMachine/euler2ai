@@ -19,7 +19,7 @@ FORBIDDEN_STRINGS = [r'sqrt', r'tan', r'cos', r'sin', r'log', r'ln',
 
 # multiprocessing settings
 NUM_WORKERS = min(6, MAX_WORKERS)
-CHUNKSIZE = 100
+CHUNKSIZE = 1
 
 # directory paths
 BASE_INPUT = os.path.join(BASE_DIR, '1_scraping')         # scraping directory
