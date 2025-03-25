@@ -32,8 +32,13 @@ def process_arg_dict(arg_dict):
     if not eqdict['type']:
         return
     
-    formula, computable = build_formula(eqdict['type'], eqdict['info'])
-    save_dict = {'type': eqdict['type'], 'formula': str(formula), 'computable': computable}
+    try:
+        formula, computable = build_formula(eqdict['type'], eqdict['info'])
+        save_dict = {'type': eqdict['type'], 'formula': str(formula), 'computable': computable}
+    except Exception as e:
+        print(f"Build error in {arg_dict['file_origin']}: {e}")
+        computable = False
+        save_dict = {'type': eqdict['type'], 'formula': None, 'computable': computable}
 
     if not os.path.exists(arg_dict['file_destin_dir']):
         os.makedirs(arg_dict['file_destin_dir'])
