@@ -51,6 +51,7 @@ class CannotFoldError(Exception):
 def match_pcfs(pcf1: PCF, pcf2: PCF, limit1, limit2, convrate1, convrate2, base_constant=sp.pi,
                                  fold=True, max_fold: int = 3, approximate_ratio_to=10, max_shift=3,
                                  max_fit_up_to: int = 40, fit_up_to_step: int = 5, shift_cob_as_necessary=True, # currently not used, see end of function
+                                 try_simple_cob=True,
                                  cob_via_lim_verbose=False, verbose=False
                                  ) -> Tuple[RecurrenceTransform, RecurrenceTransform, CobTransform]:
     r"""
@@ -62,14 +63,15 @@ def match_pcfs(pcf1: PCF, pcf2: PCF, limit1, limit2, convrate1, convrate2, base_
         * limit1, limit2: the limits of the pcfs in terms of base_constant.
         * convrate1, convrate2: the exponential convergence rates of the pcfs.
         * base_constant: the base constant for the pcfs.
-        * fold: whether to fold the pcfs to match the eigenvalue ratios.
+        * fold: whether to fold the pcfs to match the convergence rates.
         * max_fold: the maximum fold to allow when folding the pcfs.
-        * approximate_ratio_to: the maximum denominator to approximate the eigenvalue ratios to.
+        * approximate_ratio_to: the maximum denominator to approximate the convergence rates to.
         * max_shift: the maximum shift to allow when hopping along the lattice to find a well-defined coboundary matrix.
         * max_fit_up_to: the maximum fit up to value to try to extract the coboundary triple.
         * fit_up_to_step: the step to increase the fit up to value by.
         * shift_cob_as_necessary: whether to apply a shift
-            to make the coboundary matrix well-defined (det(U) != 0) at all depths 
+            to make the coboundary matrix well-defined (det(U) != 0) at all depths
+        * try_simple_cob: whether to try a simple coboundary match without folding first. 
         * cob_via_lim_verbose: whether to print the progress of the coboundary via limits algorithm.
         * verbose: whether to print the progress of the matching algorithm.
     
@@ -85,26 +87,29 @@ def match_pcfs(pcf1: PCF, pcf2: PCF, limit1, limit2, convrate1, convrate2, base_
     Raises:
         NoSolutionError: if no coboundary solution is found.
     """
-    # try a simple coboundary match
-    if verbose:
-        print(f'Checking coboundary for pcfs: {pcf1}, {pcf2}.')
-    # solving coboundary
-    if verbose:
-        print(f'Solving coboundary.')
-    cobvialim = PCFCobViaLim(pcf1, pcf2, limit1, limit2, base_constant=base_constant)
-    cobvialim.solve_empirical_U(max_fit_up_to, verbose=cob_via_lim_verbose)
+
     U, g1, g2 = None, None, None
-    fit_up_to = 10
-    while U is None and fit_up_to <= max_fit_up_to + 1: # NOTE: <= to make sure the last fit_up_to is tried, differs from the loop for after folding below
+
+    if try_simple_cob:
+
         if verbose:
-            print(f'    Trying fit_up_to = {fit_up_to}')
-    # for fit_up_to in range(10, max_fit_up_to - fit_up_to_step + 1, fit_up_to_step):
-        try:
-            U, g1, g2 = cobvialim.extract_coboundary_triple(fit_up_to=fit_up_to)
-        except NoSolutionError:
-            pass
-        fit_up_to += fit_up_to_step
-    foldtopcf1, foldtopcf2 = FoldToPCFTransform(pcf1.CM(), 1), FoldToPCFTransform(pcf1.CM(), 1) # initialize
+            print(f'Checking coboundary for pcfs: {pcf1}, {pcf2}.')
+        if verbose:
+            print(f'Solving coboundary.')
+
+        cobvialim = PCFCobViaLim(pcf1, pcf2, limit1, limit2, base_constant=base_constant)
+        cobvialim.solve_empirical_U(max_fit_up_to, verbose=cob_via_lim_verbose)
+    
+        fit_up_to = 10
+        while U is None and fit_up_to <= max_fit_up_to + 1: # NOTE: <= to make sure the last fit_up_to is tried, differs from the loop for after folding below
+            if verbose:
+                print(f'    Trying fit_up_to = {fit_up_to}')
+            try:
+                U, g1, g2 = cobvialim.extract_coboundary_triple(fit_up_to=fit_up_to)
+            except NoSolutionError:
+                pass
+            fit_up_to += fit_up_to_step
+        foldtopcf1, foldtopcf2 = FoldToPCFTransform(pcf1.CM(), 1), FoldToPCFTransform(pcf1.CM(), 1) # initialize
     
     if U is None:
         # matching convergence rates
@@ -115,10 +120,9 @@ def match_pcfs(pcf1: PCF, pcf2: PCF, limit1, limit2, convrate1, convrate2, base_
             den = den if den != 0 else 1
             ratio = sp.Rational(num, den)
             if verbose:
-                print(f'Eigenvalue ratios: {str(convrate1)[:5]}, {str(convrate2)[:5]}, ratio: {str(ratio)[:5]}.')
-            if ratio == 1:
-                fold = False
-            if fold:
+                print(f'Convergence rates: {str(convrate1)[:5]}, {str(convrate2)[:5]}, ratio: {str(ratio)[:5]}.')
+            
+            if not ratio == 1 or not try_simple_cob:
                 if ratio.denominator > max_fold or ratio.numerator > max_fold:
                     raise CannotFoldError(f'Cannot fold: max_fold is set to {max_fold}' + \
                                         f' and folds are {ratio.denominator, ratio.numerator}.')
@@ -127,8 +131,6 @@ def match_pcfs(pcf1: PCF, pcf2: PCF, limit1, limit2, convrate1, convrate2, base_
                 foldtopcf1 = FoldToPCFTransform(pcf1.CM(), ratio.denominator, shift_pcf_as_necessary=False) 
                 foldtopcf2 = FoldToPCFTransform(pcf2.CM(), ratio.numerator, shift_pcf_as_necessary=False)
                 # shift_pcf_as_necessary=False because otherwise the new limit will be problematic to compute... may not converge to pi?
-                # TODO: understand what a singular matrix does to the limit
-                # Example to consider: ([2, 2], [1, 1]). This will convert the limit to 2. No matter what it was...
                 
                 # hop along the pcf{i}-foldedpcf{i} lattice
                 # shift the coboundary matrix to make sure it is nonsingular
@@ -225,3 +227,54 @@ def match_pcfs(pcf1: PCF, pcf2: PCF, limit1, limit2, convrate1, convrate2, base_
         raise NoSolutionError('Matching failed.')
 
     return foldtopcf1, foldtopcf2, CobTransform(U, g1 / g2)
+
+
+def apply_match_pcfs(pcf1: PCF, pcf2: PCF, limit1, limit2, convrate1, convrate2, base_constant=sp.pi,
+                     cob_via_lim_verbose=False, verbose=False
+                    ) -> Tuple[RecurrenceTransform, RecurrenceTransform, CobTransform]:
+    """
+    Applies the match_pcfs function to the given pcfs and returns the transformations.
+    If the convergence rates are 0, it tries to match the pcfs using 3 folding schemes:
+    fold neither or fold one of them by 2 (two options).
+
+    Args:
+        * pcf1, pcf2: the pcfs to match.
+        * limit1, limit2: the limits of the pcfs in terms of base_constant.
+        * convrate1, convrate2: the exponential convergence rates of the pcfs.
+        * base_constant: the base constant for the pcfs.
+        * cob_via_lim_verbose: whether to print the progress of the coboundary via limits algorithm.
+        * verbose: whether to print the progress of the matching algorithm.
+    
+    Returns:
+        A triple: (T1, T2, C) as in match_pcfs.
+        
+    Raises:
+        NoSolutionError: if no coboundary solution is found.
+    """
+    
+    if convrate1 == 0 or convrate2 == 0:
+        if verbose:
+            print("One of the convergence rates is 0, trying to match by folding by 1 or 2")
+        transformation = None
+
+        attempts = [(1, 1), (1, 2), (2, 1)]
+        for attempt in attempts:
+            if verbose:
+                print("\nAttempting folds by:", attempt[0], attempt[1])
+            try:
+                transformation = match_pcfs(pcf1, pcf2, limit1, limit2, attempt[0], attempt[1], base_constant=base_constant,
+                                            try_simple_cob=False,
+                                            cob_via_lim_verbose=cob_via_lim_verbose, verbose=verbose)
+            except Exception as e:
+                continue
+            if transformation is not None:
+                break
+
+        if transformation is None:
+            raise NoSolutionError('Matching failed.')
+    
+    else:
+        transformation = match_pcfs(pcf1, pcf2, limit1, limit2, convrate1, convrate2, base_constant=base_constant,
+                                    cob_via_lim_verbose=cob_via_lim_verbose, verbose=verbose)
+    
+    return transformation
