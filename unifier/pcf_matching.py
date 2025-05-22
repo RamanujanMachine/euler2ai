@@ -8,6 +8,57 @@ from sympy.abc import n
 from typing import Tuple
 
 
+def apply_match_pcfs(pcf1: PCF, pcf2: PCF, limit1, limit2, convrate1, convrate2, base_constant=sp.pi,
+                     cob_via_lim_verbose=False, verbose=False
+                    ) -> Tuple[RecurrenceTransform, RecurrenceTransform, CobTransform]:
+    """
+    Applies the match_pcfs function to the given pcfs and returns the transformations.
+    If the convergence rates are 0, it tries to match the pcfs using 3 folding schemes:
+    fold neither or fold one of them by 2 (two options).
+
+    Args:
+        * pcf1, pcf2: the pcfs to match.
+        * limit1, limit2: the limits of the pcfs in terms of base_constant.
+        * convrate1, convrate2: the exponential convergence rates of the pcfs.
+        * base_constant: the base constant for the pcfs.
+        * cob_via_lim_verbose: whether to print the progress of the coboundary via limits algorithm.
+        * verbose: whether to print the progress of the matching algorithm.
+    
+    Returns:
+        A triple: (T1, T2, C) as in match_pcfs.
+        
+    Raises:
+        NoSolutionError: if no coboundary solution is found.
+    """
+    
+    if convrate1 == 0 or convrate2 == 0:
+        if verbose:
+            print("One of the convergence rates is 0, trying to match by folding by 1 or 2")
+        transformation = None
+
+        attempts = [(1, 1), (1, 2), (2, 1)]
+        for attempt in attempts:
+            if verbose:
+                print("\nAttempting folds by:", attempt[0], attempt[1])
+            try:
+                transformation = match_pcfs(pcf1, pcf2, limit1, limit2, attempt[0], attempt[1], base_constant=base_constant,
+                                            try_simple_cob=False,
+                                            cob_via_lim_verbose=cob_via_lim_verbose, verbose=verbose)
+            except Exception as e:
+                continue
+            if transformation is not None:
+                break
+
+        if transformation is None:
+            raise NoSolutionError('Matching failed.')
+    
+    else:
+        transformation = match_pcfs(pcf1, pcf2, limit1, limit2, convrate1, convrate2, base_constant=base_constant,
+                                    cob_via_lim_verbose=cob_via_lim_verbose, verbose=verbose)
+    
+    return transformation
+
+
 def get_necessary_shift_to_coboundary(U, g1, g2):
     shift = 0
     cob_zeros = [z for z in sp.solve(U.det(), n) if isinstance(z, sp.Integer) or isinstance(z, int)]
@@ -227,54 +278,3 @@ def match_pcfs(pcf1: PCF, pcf2: PCF, limit1, limit2, convrate1, convrate2, base_
         raise NoSolutionError('Matching failed.')
 
     return foldtopcf1, foldtopcf2, CobTransform(U, g1 / g2)
-
-
-def apply_match_pcfs(pcf1: PCF, pcf2: PCF, limit1, limit2, convrate1, convrate2, base_constant=sp.pi,
-                     cob_via_lim_verbose=False, verbose=False
-                    ) -> Tuple[RecurrenceTransform, RecurrenceTransform, CobTransform]:
-    """
-    Applies the match_pcfs function to the given pcfs and returns the transformations.
-    If the convergence rates are 0, it tries to match the pcfs using 3 folding schemes:
-    fold neither or fold one of them by 2 (two options).
-
-    Args:
-        * pcf1, pcf2: the pcfs to match.
-        * limit1, limit2: the limits of the pcfs in terms of base_constant.
-        * convrate1, convrate2: the exponential convergence rates of the pcfs.
-        * base_constant: the base constant for the pcfs.
-        * cob_via_lim_verbose: whether to print the progress of the coboundary via limits algorithm.
-        * verbose: whether to print the progress of the matching algorithm.
-    
-    Returns:
-        A triple: (T1, T2, C) as in match_pcfs.
-        
-    Raises:
-        NoSolutionError: if no coboundary solution is found.
-    """
-    
-    if convrate1 == 0 or convrate2 == 0:
-        if verbose:
-            print("One of the convergence rates is 0, trying to match by folding by 1 or 2")
-        transformation = None
-
-        attempts = [(1, 1), (1, 2), (2, 1)]
-        for attempt in attempts:
-            if verbose:
-                print("\nAttempting folds by:", attempt[0], attempt[1])
-            try:
-                transformation = match_pcfs(pcf1, pcf2, limit1, limit2, attempt[0], attempt[1], base_constant=base_constant,
-                                            try_simple_cob=False,
-                                            cob_via_lim_verbose=cob_via_lim_verbose, verbose=verbose)
-            except Exception as e:
-                continue
-            if transformation is not None:
-                break
-
-        if transformation is None:
-            raise NoSolutionError('Matching failed.')
-    
-    else:
-        transformation = match_pcfs(pcf1, pcf2, limit1, limit2, convrate1, convrate2, base_constant=base_constant,
-                                    cob_via_lim_verbose=cob_via_lim_verbose, verbose=verbose)
-    
-    return transformation

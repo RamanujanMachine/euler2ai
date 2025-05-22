@@ -4,7 +4,6 @@ from .pcf_matching import apply_match_pcfs
 from .identify import identify, identification_loop, identify_pcf_limit
 from .pcf_from_series import PCFFromSeries
 from .find_initial import find_initial
-from .coboundary_graph import recursive_coboundary_graph
 from .recurrence_transforms import (
     RecurrenceTransform,
     FoldTransform,
@@ -25,7 +24,6 @@ __all__ = [
     'identify_pcf_limit',
     'PCFFromSeries',
     'find_initial',
-    'recursive_coboundary_graph',
     'RecurrenceTransform',
     'FoldTransform',
     'FoldToPCFTransform',
