@@ -121,4 +121,4 @@ if __name__ == "__main__":
             if process.is_alive():
                 print(f"Timeout: {process.name} did not finish in {VALIDATION_TIMEOUT} seconds.")
                 process.terminate()
-                process.join()
+                process.join()        

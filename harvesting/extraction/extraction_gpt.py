@@ -21,7 +21,8 @@ class SympyExpression(BaseModel):
 
 def correct_to_sympy_expression(string, api_key, messages=[],
                                 max_iters=3, temperature=0,
-                                max_tokens=None, verbose=False):
+                                max_tokens=None, model='gpt-4o',
+                                error_length=400, verbose=False):
     """
     Tries to correct a string to be a proper sympy expression.
 
@@ -29,6 +30,8 @@ def correct_to_sympy_expression(string, api_key, messages=[],
         max_iters: maximum number of iterations allowed for GPT to correct itself.
     """
     client = openai.OpenAI(api_key=api_key)
+
+    token_counts = {'system': 0, 'user': 0, 'assistant': 0}
 
     working_messages = copy.deepcopy(messages)
     original_string = string
@@ -62,7 +65,7 @@ def correct_to_sympy_expression(string, api_key, messages=[],
                     print(f'Error: {e}')
                 working_messages.append(
                     user_message(
-                        f"The last attempt was invalid SymPy code: {str(e)[:50]}.\n\n"
+                        f"The last attempt was invalid SymPy code: {str(e)[:error_length]}.\n\n"
                         f"Last attempt:\n{string}\n\n"
                         "Task:\n"
                         "1. Extract the expression from the **original string** below.\n"
@@ -73,16 +76,18 @@ def correct_to_sympy_expression(string, api_key, messages=[],
                         )
                     )
                 response = client.beta.chat.completions.parse(
-                    model="gpt-4o", messages=working_messages, temperature=temperature,
+                    model=model, messages=working_messages, temperature=temperature,
                     max_tokens=max_tokens, response_format=SympyExpression)
                 working_messages.append(assistant_message(extract_content(response)))
                 new_messages.append(working_messages[-1])
                 string = json.loads(working_messages[-1]['content'])['expression']
+
+                token_counts = {k: v + token_counts[k] for k, v in count_tokens_for_messages(working_messages).items()}
             else:
                 break
   
-    correction_cost = estimate_cost(messages=new_messages)
-    return string, messages, expression_is_clean, correction_cost, i, new_messages
+    correction_cost = estimate_cost(token_counts=token_counts)
+    return string, messages, expression_is_clean, correction_cost, i, new_messages, token_counts
 
 
 class FormulaBool(BaseModel):
@@ -118,7 +123,7 @@ class Variable(BaseModel):
 
 def extract_formula(latex_string, api_key, constant='pi',
                     temperature=0, max_iters=3, max_tokens=None,
-                    save_messages=False, verbose=True) -> dict:
+                    save_messages=False, model='gpt-4o', verbose=True) -> dict:
     """
     The model used for symbolic formula extraction is 'gpt-4o', compared with 'gpt-4o-mini'
     which is used otherwise throughout the pipeline. 'gpt-4o' is seemingly better at generalizing
@@ -129,6 +134,8 @@ def extract_formula(latex_string, api_key, constant='pi',
         save_messages: whether to save the messages exchanged with the model in the output dict.
     """
     client = openai.OpenAI(api_key=api_key)
+
+    token_counts = {'system': 0, 'user': 0, 'assistant': 0}
 
     if verbose:
         print(f'Extracting formula from: {latex_string}')
@@ -160,15 +167,15 @@ def extract_formula(latex_string, api_key, constant='pi',
 
     # is a formula?
     response = client.beta.chat.completions.parse(
-        model="gpt-4o", messages=messages, temperature=temperature,
+        model=model, messages=messages, temperature=temperature,
         max_tokens=max_tokens, response_format=FormulaBool
         )
     messages.append(assistant_message(extract_content(response)))
+    token_counts = {k: v + token_counts[k] for k, v in count_tokens_for_messages(messages).items()}
 
     formula_bool = json.loads(messages[-1]['content'])['boolean']
 
     if not formula_bool:
-        token_counts = count_tokens_for_messages(messages)
         total_cost = estimate_cost(token_counts=token_counts)
         if verbose:
             print(f'Not a formula.')
@@ -178,7 +185,6 @@ def extract_formula(latex_string, api_key, constant='pi',
             'messages': messages
             }
     if verbose:
-        token_counts = count_tokens_for_messages(messages)
         total_cost = estimate_cost(token_counts=token_counts)
         print(f'Is a formula.')
         print('Total token counts:', token_counts)
@@ -194,16 +200,16 @@ def extract_formula(latex_string, api_key, constant='pi',
             )
         )
     response = client.beta.chat.completions.parse(
-        model="gpt-4o", messages=messages, temperature=temperature,
+        model=model, messages=messages, temperature=temperature,
         max_tokens=max_tokens, response_format=FormulaClassification
         )
     messages.append(assistant_message(extract_content(response)))
+    token_counts = {k: v + token_counts[k] for k, v in count_tokens_for_messages(messages).items()}
 
     formula_type = json.loads(messages[-1]['content'])['formula_type']
 
     if verbose:
-        token_counts = count_tokens_for_messages(messages)
-        total_cost = estimate_cost(token_counts=token_counts, model="gpt-4o")
+        total_cost = estimate_cost(token_counts=token_counts, model=model)
         print(f'Formula of type: {formula_type}')
         print('Total token counts:', token_counts)
         print('Total cost estimate:', total_cost)
@@ -231,11 +237,13 @@ def extract_formula(latex_string, api_key, constant='pi',
                 )
             )
         response = client.beta.chat.completions.parse(
-            model="gpt-4o", messages=messages, temperature=temperature,
+            model=model, messages=messages, temperature=temperature,
             max_tokens=max_tokens, response_format=CF)
         messages.append(assistant_message(extract_content(response)))
+        token_counts = {k: v + token_counts[k] for k, v in count_tokens_for_messages(messages).items()}
 
     elif formula_type == 'series':
+        # note: added the z in the examples formula so that there would be unknowns
         messages.append(
             user_message(
                 "Step 3:\n" + \
@@ -245,12 +253,12 @@ def extract_formula(latex_string, api_key, constant='pi',
                 "3. The start value of the dummy variable.\n" + \
                 "4. Any unknown variables (other than the dummy variable).\n\n" + \
                 "For example:\n" + \
-                "The string '\\pi=\\frac{22}{7} -24\\sum_{n=2}^\\infty \\frac{(-1)^{n}}{(2n+1)(2n+2)(2n+3)(2n+4)(2n+5)}' " + \
+                "The string '\\pi \cdot z =\\frac{22}{7} -24\\sum_{n=2}^\\infty \\frac{(-1)^{n}}{(2n+1 + z)(2n+2 + z)(2n+3)(2n+4)(2n+5)}' " + \
                 "has the following:\n" + \
                 "  - Term: '(-1)**n / ((2*n + 1)*(2*n + 2)*(2*n + 3)*(2*n + 4)*(2*n + 5))'\n" + \
                 "  - Dummy variable: 'n'\n" + \
                 "  - Start: '2'\n" + \
-                "  - Unknowns: []\n\n" + \
+                "  - Unknowns: ['z']\n\n" + \
                 "Pay attention to special symbols like _<symbol> (e.g., '(\\frac{1}{2})_n')," + \
                     "which often indicate a RisingFactorial. Another symbol to look out for is" + \
                         "'H_' which often means harmonic.\n\n" + \
@@ -258,15 +266,15 @@ def extract_formula(latex_string, api_key, constant='pi',
                 )
             )
         response = client.beta.chat.completions.parse(
-            model="gpt-4o", messages=messages, temperature=temperature,
+            model=model, messages=messages, temperature=temperature,
             max_tokens=max_tokens, response_format=Series)
         messages.append(assistant_message(extract_content(response)))
+        token_counts = {k: v + token_counts[k] for k, v in count_tokens_for_messages(messages).items()}
 
     formula_info = json.loads(messages[-1]['content'])
 
     if verbose:
-        token_counts = count_tokens_for_messages(messages)
-        total_cost = estimate_cost(token_counts=token_counts, model="gpt-4o")
+        total_cost = estimate_cost(token_counts=token_counts, model=model)
         print('Extracted formula info')
         print('Total token counts:', token_counts)
         print('Total cost estimate:', total_cost)
@@ -288,14 +296,14 @@ def extract_formula(latex_string, api_key, constant='pi',
             )
         )
     response = client.beta.chat.completions.parse(
-        model="gpt-4o", messages=messages, temperature=temperature,
+        model=model, messages=messages, temperature=temperature,
         max_tokens=max_tokens, response_format=Variable)
     messages.append(assistant_message(extract_content(response)))
+    token_counts = {k: v + token_counts[k] for k, v in count_tokens_for_messages(messages).items()}
 
     formula_variable = json.loads(messages[-1]['content'])['variable']
 
     if verbose:
-        token_counts = count_tokens_for_messages(messages)
         total_cost = estimate_cost(token_counts=token_counts)
         print(f'Formula variable: {formula_variable}')
         print('Total token counts:', token_counts)
@@ -307,15 +315,17 @@ def extract_formula(latex_string, api_key, constant='pi',
     info_correction_cost = {}
     info_correction_iters = {}
     info_correction_messages = []
+    info_correction_token_counts = {}
 
     for key, val in formula_info.items():
         if key == 'unknowns':
             proper_sympy_vals = []
             correction_costs = []
             correction_iters = []
+            correction_token_counts = []
             
             for i, string in enumerate(val):
-                corrected_string, _, sympy_boolean, cost, iters, new_messages = correct_to_sympy_expression(
+                corrected_string, _, sympy_boolean, cost, iters, new_messages, new_token_counts = correct_to_sympy_expression(
                     string, api_key, messages=messages, max_iters=max_iters,
                     temperature=temperature, max_tokens=max_tokens, verbose=verbose)
                 
@@ -324,12 +334,16 @@ def extract_formula(latex_string, api_key, constant='pi',
                 correction_costs.append(cost)
                 correction_iters.append(iters)
                 info_correction_messages.extend(new_messages)
+                
+                correction_token_counts.append(new_token_counts)
+                token_counts = {k: v + token_counts[k] for k, v in new_token_counts.items()}
             
             info_is_proper_sympy[key] = proper_sympy_vals
             info_correction_cost[key] = correction_costs
             info_correction_iters[key] = correction_iters
+            info_correction_token_counts[key] = correction_token_counts
         else:
-            corrected_val, _, proper_sympy_val, correction_cost, correction_iters, new_messages = correct_to_sympy_expression(
+            corrected_val, _, proper_sympy_val, correction_cost, correction_iters, new_messages, new_token_counts = correct_to_sympy_expression(
                 val, api_key, messages=messages, max_iters=max_iters,
                 temperature=temperature, max_tokens=max_tokens, verbose=verbose)
             
@@ -339,6 +353,9 @@ def extract_formula(latex_string, api_key, constant='pi',
             info_correction_iters[key] = correction_iters
             info_correction_messages.extend(new_messages)
 
+            info_correction_token_counts[key] = new_token_counts
+            token_counts = {k: v + token_counts[k] for k, v in new_token_counts.items()}
+
     if verbose:
         print("Cleaned formula info.")
 
@@ -346,7 +363,7 @@ def extract_formula(latex_string, api_key, constant='pi',
     # package up the results
     formula_info = {**formula_info, 'variable': formula_variable}
     messages.extend(info_correction_messages)
-    token_counts = count_tokens_for_messages(messages)
+    token_counts = {k: v + token_counts[k] for k, v in count_tokens_for_messages(messages).items()}
     total_cost = estimate_cost(token_counts=token_counts)
 
     output= {
@@ -355,7 +372,8 @@ def extract_formula(latex_string, api_key, constant='pi',
         'info': formula_info,
         'is_proper_sympy': info_is_proper_sympy,
         'correction_cost': info_correction_cost,
-        'correction_iters': info_correction_iters
+        'correction_iters': info_correction_iters,
+        'correction_tokens': info_correction_token_counts
         }
     
     if save_messages:

@@ -19,12 +19,12 @@
 
 # NOTE: if USE_GUESS is True,
 # running 6_to_recurrence.py prepares data for Mathematica script 6_to_recurrence.wl 
-# !!! MAKE SURE TO CONFIGURE !!!
+# !!! MAKE SURE TO CONFIGURE: !!!
 # 6_to_recurrence.wl --> baseDir and GuessPath
 # before running 6_to_recurrence.wl
 
 
-BASE_DIR = r'C:\Users\totos\Desktop\Refactor'
+BASE_DIR = ''
 ARXIV_IDS_OF_INTEREST = [
     '1911.05456',
     '2204.08275',
@@ -45,3 +45,4 @@ CONSTANT = 'pi'
 MAX_WORKERS = 10
 USE_GUESS = False
 VALIDATION_TIMEOUT = 10
+MODEL = 'gpt-4o'  # or 'gpt-4o-mini'

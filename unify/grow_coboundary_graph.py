@@ -1,19 +1,24 @@
-from multiprocessing import Pool
-import pickle
 import os
+import pickle
 import sympy as sp
 import numpy as np
 import networkx as nx
+from multiprocessing import Pool
 from unifier import apply_match_pcfs, PCF
 
 
-SAVE_DIR = r"testing_fixed_graph_grower" # r"debugging_graph_grower" # r"updated_graphs_with_cmf_pcfs\updated_including_additional_pcf" # r"updated_graphs_with_cmf_pcfs-test"
-PCFS = r"C:\Users\totos\Documents\Technion\Ramanujan\Ramanujan python\series_updated\updated_allpcfs\allpcfs_final_final.pkl" # r"debugging_graph_grower\pcfs_sample_cc.pkl" # "allpcfs_final_final.pkl" # r'allpcfs_final-including_manual-with_metrics-grouped.pkl'
-CMF_PCFS = r"testing_fixed_graph_grower/updated_cmf_pcfs_sufficient.pkl" # r"debugging_graph_grower\cmf_pcfs_sample_cc.pkl" # r"updated_cmf_pcfs_sufficient.pkl" # r"updated_cmf_pcfs.pkl"
-STARTING_GRAPH = '' # r"updated_graphs/graph_-1.0_to_-0.1.pkl"
-CMF_ATTEMPTED = '' # r"updated_graphs_with_cmf_pcfs/cmf_attempted.pkl" # cmf-non cmf "edges" that have been attempted
-START_DELTA = -1.00 # delta to start from
-NUM_WORKERS = 8
+# This script corresponds to the coboundary graph growing algorithm (Appendix B.1)
+# `apply_match_pcfs` corresponds to the matching algorithm (Appendix B.2)
+
+
+SAVE_DIR = 'coboundary_graphs'
+PCFS = "data/pcfs.pkl"
+CMF_PCFS = "data/cmf_pcfs_compact.pkl"  # compact version of cmf_pcfs.pkl to reduce runtime
+STARTING_GRAPH = ''                     # fill in if a previous run was interrupted
+CMF_ATTEMPTED = ''                      # fill in if a previous run was interrupted
+START_DELTA = -1.00                     # delta to start from
+END_DELTA = 0.05                        # delta to end at
+NUM_WORKERS = 8                         # CONFIGURE PER YOUR MACHINE: number of workers for multiprocessing
 VERBOSE = True
 
 
@@ -34,7 +39,7 @@ def explore_edge(args):
     limit2 = sp.sympify(lim2)
     convrate2 = convrate2
     try:
-        transformation = apply_match_pcfs(pcf, pcf2, limit, limit2, convrate, convrate2) #, verbose=True)
+        transformation = apply_match_pcfs(pcf, pcf2, limit, limit2, convrate, convrate2)
         return (a1, b1), (a2, b2), transformation, edge_attempt_id
     except Exception as e:
         return (a1, b1), (a2, b2), None, edge_attempt_id
@@ -83,7 +88,7 @@ if __name__  == "__main__":
     
     last_saved_at_edge_attempt_number = edge_attempt_number
 
-    for delta in np.arange(START_DELTA, -0.05, 0.05):
+    for delta in np.arange(START_DELTA, END_DELTA, 0.05):
         delta = round(delta, 3)
         print(f'Starting delta={delta}...')
         candidates = pcfs[pcfs['delta'].apply(lambda x: abs(x - delta) < 0.03)]
@@ -135,11 +140,6 @@ if __name__  == "__main__":
     with open(os.path.join(SAVE_DIR, f'graph_{START_DELTA}_to_{delta}_before_cmf_pcfs.pkl'), 'wb') as f:
         pickle.dump(graph, f)
     final_delta = delta
-
-    # maybe: check all remaining nodes (not in nonhubs) and see if there are additional matches
-    # perhaps something was missed due to the order of the pcfs
-    # (maybe coboundary fit to 40 works in one order but not in the other)
-    # actually: we may want to add this reversal step during the loop over deltas
 
     print('Starting matching to CMF PCFs...')
     print('Total hub PCFs:', len(pcfs) - len(nonhubs))
@@ -195,9 +195,11 @@ if __name__  == "__main__":
                 or (row2['ab'], ab) in graph_edges:
                 # removed this condition: row2['ab'] in nonhubs 
                 continue
+            
+            edge_attempt_number += 1
 
             args_list.append(
-                (0, # placeholder for edge_attempt_id - not relevant for CMF PCFs
+                (edge_attempt_number,
                  row2['a'], row2['b'], row2['limit'], round_convrate(float(row2['convergence_rate'])),
                  row['a'], row['b'], row['limit'], round_convrate(float(row['convergence_rate'])))
             )
@@ -209,8 +211,6 @@ if __name__  == "__main__":
             if match_found:
                 break
             args_list_batch = args_list[b:b + NUM_WORKERS]
-            if VERBOSE:
-                print(f'        starting batch {-(-b // NUM_WORKERS)} of {-(-len(args_list) // NUM_WORKERS)}')
 
             with Pool(processes=NUM_WORKERS) as pool:
                 results = pool.map(explore_edge, args_list_batch)
