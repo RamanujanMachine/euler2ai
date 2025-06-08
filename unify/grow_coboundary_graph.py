@@ -12,13 +12,13 @@ from unifier import apply_match_pcfs, PCF
 
 
 SAVE_DIR = 'coboundary_graphs'
-PCFS = "data/pcfs.pkl"
-CMF_PCFS = "data/cmf_pcfs_compact.pkl"  # compact version of cmf_pcfs.pkl to reduce runtime
-STARTING_GRAPH = ''                     # fill in if a previous run was interrupted
-CMF_ATTEMPTED = ''                      # fill in if a previous run was interrupted
-START_DELTA = -1.00                     # delta to start from
-END_DELTA = 0.05                        # delta to end at
-NUM_WORKERS = 8                         # CONFIGURE PER YOUR MACHINE: number of workers for multiprocessing
+PCFS = "dataset/pcfs.pkl"
+CMF_PCFS = "dataset/cmf_pcfs_compact.pkl"   # compact version of cmf_pcfs.pkl to reduce runtime
+STARTING_GRAPH = ''                         # fill in if a previous run was interrupted
+CMF_ATTEMPTED = ''                          # fill in if a previous run was interrupted
+START_DELTA = -1.00                         # delta to start from
+END_DELTA = 0.05                            # delta to end at
+NUM_WORKERS = 8                             # CONFIGURE PER YOUR MACHINE: number of workers for multiprocessing
 VERBOSE = True
 
 

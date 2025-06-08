@@ -209,5 +209,10 @@ if __name__ == "__main__":
     pcfsdf['line'] = pcfsdf['source'].apply(lambda x: x['line'])
     pcfsdf_sorted = pcfsdf.sort_values(by=['local_file', 'line'])
     pcfsdf = pcfsdf_sorted.drop(columns=['local_file', 'line']).reset_index(drop=True)
+
+
+    # compute dynamical metrics
+    # TODO complete this part
+
     pcfsdf.to_pickle(OUTPUT_PKL)
     # pcfsdf.to_json(OUTPUT_JSON.replace('.json', 'test.json'), orient='index', indent=4)

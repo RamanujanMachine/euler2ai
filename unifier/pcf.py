@@ -1,8 +1,6 @@
 from .utils.LIReC_utils.pcf import PCF as LPCF
-# from .utils.LIReC_utils.pcf import IllegalPCFException
 from .utils.pcf_utils import content
 import mpmath as mm
-import gmpy2
 import sympy as sp
 n = sp.symbols('n')
 
@@ -201,7 +199,7 @@ class PCF():
         if verbose:
             print(f'Precision of step matrix: {prec}')
         cur_mp = mp(precision=prec)
-        return cur_mp.fabs(1 / depth * cur_mp.log(cur_mp.fabs((approximant - limit).evalf(prec))))
+        return cur_mp.re(cur_mp.fabs(1 / depth * cur_mp.log(cur_mp.fabs((approximant - limit).evalf(prec)))))
 
     def delta(self, depth=2000, limit=None, verbose=False):
         """
@@ -222,15 +220,56 @@ class PCF():
             print(f'Precision of step matrix: {prec}')
         p = step_mat[0][1]
         q = step_mat[1][1]
-        p = gmpy2.mpz(p)
-        q = gmpy2.mpz(q)
-        gcd = gmpy2.gcd(p, q)
-        cur_mp = mp(precision=prec)
-        reduced_q = cur_mp.fabs(q // gcd)
+        p = sp.Integer(p)
+        q = sp.Integer(q)
+        gcd = sp.gcd(p, q)
+        reduced_q = sp.Integer(q / gcd)
         if reduced_q == 1:
             return  # undefined
-        approximant = cur_mp.mpf(p) / cur_mp.fabs(q)
-        return -(1 + cur_mp.log(cur_mp.fabs(limit - approximant), cur_mp.mpf(reduced_q)))
+        cur_mp = mp(precision=prec)
+        approximant = cur_mp.mpf(p / q)
+        return cur_mp.re(-(1 + cur_mp.log(cur_mp.fabs(limit - approximant), cur_mp.mpf(reduced_q))))
+
+    def compute_dynamics(self, depth=4000, max_iters=5, depth_shift=100, verbose=False):
+        """
+        Computes the PCF's dynamical metrics: irrationality measure and convergence rate.
+        Applies a depth shift to compensate for internal problems that may arise.
+
+        Args:
+            depth (int): The approximation depth at which to compute the dynamical metrics.
+            max_iters (int): The maximum number of depths to try (due to internal problems).
+            depth_shift (int): The amount to shift the depth in each iteration.
+            verbose (bool): If True, prints c
+        """
+        orig_depth = depth
+
+        delta = float('+inf'); i = 0; success = False
+        while (delta == float('+inf') or not success) and i < max_iters:
+            if i > 0:
+                if verbose:
+                    print('delta is +inf')
+                    print(i, self)
+            try:
+                delta = round(float(self.delta(depth)), 5)
+                success = True
+            except Exception as e:
+                if verbose:
+                    print(f'Error in delta of {self}:', e)
+                success = False
+            depth += depth_shift; i += 1
+
+        depth = orig_depth
+        convrate = 0; i = 0; success = False
+        while not success and i < max_iters:
+            try:
+                convrate = round(float(self.convergence_rate(depth)), 5)
+                success = True
+            except Exception as e:
+                if verbose:
+                    print(f'Error in convrate of {self}:', e)
+            depth += depth_shift; i += 1
+
+        return delta, convrate
 
 
 def mp(precision):
