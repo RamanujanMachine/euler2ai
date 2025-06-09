@@ -2,14 +2,14 @@ from unifier.pcf_from_series import PCFFromSeries, NotRationalFunctionError
 from dataset_utils.formula_utils import unpack_series
 from config import BASE_DIR, MAX_WORKERS, USE_GUESS
 import sympy as sp
-from multiprocessing import Pool, Manager
+from multiprocessing import Pool, Manager, cpu_count
 import os
 import json
 n = sp.symbols('n')
 
 
 # multiprocessing settings
-NUM_WORKERS = min(8, MAX_WORKERS)
+NUM_WORKERS = max(4, min(cpu_count() - 4, MAX_WORKERS))
 
 # directory paths
 BASE_INPUT = os.path.join(BASE_DIR, '5_validation')                                             # validation directory

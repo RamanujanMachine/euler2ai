@@ -8,7 +8,7 @@ from retrieval.retrieval_regular_expressions import constant_computing_patterns
 from config import BASE_DIR, CONSTANT, MAX_WORKERS
 import os
 import json
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 
 
 # pipeline - choose what processing a gather undergoes
@@ -18,7 +18,7 @@ FORBIDDEN_STRINGS = [r'sqrt', r'tan', r'cos', r'sin', r'log', r'ln',
 # ['sqrt', 'tan', 'cos', 'sin', 'log', 'ln', 'zeta', f'{CONSTANT}**', f'{CONSTANT}^']
 
 # multiprocessing settings
-NUM_WORKERS = min(6, MAX_WORKERS)
+NUM_WORKERS = max(4, min(cpu_count() - 10, MAX_WORKERS))
 CHUNKSIZE = 1
 
 # directory paths

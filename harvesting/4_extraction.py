@@ -5,11 +5,11 @@ from config import BASE_DIR, OPENAI_API_KEY, MAX_WORKERS
 import json
 import os
 import time
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 
 
 # multiprocessing settings
-NUM_WORKERS = min(8, MAX_WORKERS)
+NUM_WORKERS = max(4, min(cpu_count() - 8, MAX_WORKERS))
 
 # directory paths
 BASE_INPUT = os.path.join(BASE_DIR, '3_classification')         # classification directory

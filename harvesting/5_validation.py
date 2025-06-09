@@ -1,13 +1,13 @@
 from unifier.identify import identification_loop
 from dataset_utils.formula_utils import build_formula
 from config import BASE_DIR, MAX_WORKERS, VALIDATION_TIMEOUT
-from multiprocessing import Process
+from multiprocessing import Process, cpu_count
 import os
 import json
 
 
 # multiprocessing settings
-NUM_WORKERS = min(8, MAX_WORKERS)
+NUM_WORKERS = max(4, min(cpu_count() - 8, MAX_WORKERS))
 
 # directory paths
 BASE_INPUT = os.path.join(BASE_DIR, '4_extraction')         # extraction directory

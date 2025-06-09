@@ -3,7 +3,7 @@ import pickle
 import sympy as sp
 import numpy as np
 import networkx as nx
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 from unifier import apply_match_pcfs, PCF
 
 
@@ -18,7 +18,9 @@ STARTING_GRAPH = ''                         # fill in if a previous run was inte
 CMF_ATTEMPTED = ''                          # fill in if a previous run was interrupted
 START_DELTA = -1.00                         # delta to start from
 END_DELTA = 0.05                            # delta to end at
-NUM_WORKERS = 8                             # CONFIGURE PER YOUR MACHINE: number of workers for multiprocessing
+DELTA_GRANULARITY = 0.05                    # cluster shift
+DELTA_SIMILARITY_THRESHOLD = 0.03           # threshold for delta similarity
+NUM_WORKERS = max(4, cpu_count() - 6)       # CONFIGURE PER YOUR MACHINE: number of workers for multiprocessing
 VERBOSE = True
 
 
@@ -88,10 +90,10 @@ if __name__  == "__main__":
     
     last_saved_at_edge_attempt_number = edge_attempt_number
 
-    for delta in np.arange(START_DELTA, END_DELTA, 0.05):
+    for delta in np.arange(START_DELTA, END_DELTA, DELTA_GRANULARITY):
         delta = round(delta, 3)
         print(f'Starting delta={delta}...')
-        candidates = pcfs[pcfs['delta'].apply(lambda x: abs(x - delta) < 0.03)]
+        candidates = pcfs[pcfs['delta'].apply(lambda x: abs(x - delta) < DELTA_SIMILARITY_THRESHOLD)]
         print('    candidates:', len(candidates))
 
         for i, (ind, row) in enumerate(candidates.iterrows()): # hub            

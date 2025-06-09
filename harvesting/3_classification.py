@@ -2,11 +2,11 @@ from classification.classification_utils import classify_gather
 from config import BASE_DIR, OPENAI_API_KEY, CONSTANT, MAX_WORKERS
 import json
 import os
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 
 
 # multiprocessing settings
-NUM_WORKERS = min(8, MAX_WORKERS)
+NUM_WORKERS = max(4, min(cpu_count() - 8, MAX_WORKERS))
 CHUNKSIZE = 1
 
 # directory paths
