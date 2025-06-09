@@ -208,24 +208,25 @@ if __name__ == "__main__":
                     'local_file': file,
                     })
                 
-    with open(OUTPUT_JSON, 'w') as f:
-        json.dump(pcfs, f, indent=4)
+    # with open(OUTPUT_JSON, 'w') as f:
+    #     json.dump(pcfs, f, indent=4)
 
     dataframe = pd.DataFrame.from_dict(pcfs, orient='index')
-    pcfsdf = pd.DataFrame.from_dict(pcfs, orient='index').reset_index().rename(columns={'index': 'local_file'})
+    pcfsdf = pd.DataFrame.from_dict(pcfs, orient='index').rename(columns={'index': 'local_file'})
     pcfsdf['ab'] = pcfsdf.apply(lambda x: (x['a'], x['b']), axis=1)
     pcfsdf = pcfsdf.reindex(columns=['ab', 'a', 'b', 'limit', 'source', 'local_file'])
     pcfsdf['line'] = pcfsdf['source'].apply(lambda x: x['line'])
     pcfsdf_sorted = pcfsdf.sort_values(by=['local_file', 'line'])
-    pcfsdf = pcfsdf_sorted.drop(columns=['local_file', 'line']).reset_index(drop=True)
+    pcfsdf = pcfsdf_sorted.drop(columns=['local_file', 'line'])
     
     pcfsdf = pcfsdf.groupby(['ab']).agg(    
         {'a': 'first', 'b': 'first', 'limit': 'first', 'source': list}
         ).reset_index().rename(columns = {'source': 'sources'})
     pcfsdf.sort_values(by=['a', 'b'], key=lambda x: x.str.len(), inplace=True)
+    pcfsdf.reset_index(drop=True, inplace=True)
 
     # compute dynamical metrics
-    # TODO complete this part
+    print(f'\nComputing dynamical metrics')
 
     job = []
     for i, row in pcfsdf.iterrows():
@@ -242,4 +243,4 @@ if __name__ == "__main__":
         pcfsdf.at[i, 'convergence_rate'] = convrate
 
     pcfsdf.to_pickle(OUTPUT_PKL)
-    # pcfsdf.to_json(OUTPUT_JSON.replace('.json', 'test.json'), orient='index', indent=4)
+    pcfsdf.to_json(OUTPUT_JSON, orient='index', indent=4)

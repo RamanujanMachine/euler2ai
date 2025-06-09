@@ -10,16 +10,16 @@ class PCF():
     Class for polynomial continued fractions (our canonical forms):
     
     Methods:
-        CM() to obtain the recurrence matrix.
-        A() to obtain the standard initial conditions matrix.
-        inflate(c) to inflate the PCF by c.
-        deflate_all() to deflate the PCF to its canonical form.
-        simplify() to simplify the PCF.
-        lirec() to obtain the LIReC PCF object.
-        step() to obtain the step matrix at a given depth.
-        limit() to obtain the limit at a given depth.
-        convergence_rate() to obtain the convergence rate metric.
-        delta() to obtain the irrationality measure metric.
+        - CM() to obtain the recurrence matrix.
+        - A() to obtain the standard initial conditions matrix.
+        - inflate(c) to inflate the PCF by c.
+        - deflate_all() to deflate the PCF to its canonical form.
+        - simplify() to simplify the PCF.
+        - lirec() to obtain the LIReC PCF object.
+        - step() to obtain the step matrix at a given depth.
+        - limit() to obtain the limit at a given depth.
+        - convergence_rate() to obtain the convergence rate metric.
+        - delta() to obtain the irrationality measure metric.
     """
     def __init__(self, a, b, variable=n, inflated_by=None):
         """
@@ -198,7 +198,7 @@ class PCF():
             # limit = mp(precision=prec).mpf(limit.evalf(prec))
         if verbose:
             print(f'Precision of step matrix: {prec}')
-        cur_mp = mp(precision=prec)
+        cur_mp = mp(precision=prec*1.5)
         return cur_mp.re(cur_mp.fabs(1 / depth * cur_mp.log(cur_mp.fabs((approximant - limit).evalf(prec)))))
 
     def delta(self, depth=2000, limit=None, verbose=False):
@@ -226,18 +226,18 @@ class PCF():
         reduced_q = sp.Integer(q / gcd)
         if reduced_q == 1:
             return  # undefined
-        cur_mp = mp(precision=prec)
+        cur_mp = mp(precision=prec*1.5)
         approximant = cur_mp.mpf(p / q)
         return cur_mp.re(-(1 + cur_mp.log(cur_mp.fabs(limit - approximant), cur_mp.mpf(reduced_q))))
 
-    def compute_dynamics(self, depth=4000, max_iters=5, depth_shift=100, verbose=False):
+    def compute_dynamics(self, depth=2000, max_iters=5, depth_shift=100, verbose=False):
         """
         Computes the PCF's dynamical metrics: irrationality measure and convergence rate.
         Applies a depth shift to compensate for internal problems that may arise.
 
         Args:
             depth (int): The approximation depth at which to compute the dynamical metrics.
-            max_iters (int): The maximum number of depths to try (due to internal problems).
+            max_iters (int): The maximum number of depths to try (due to internal problems with - likely precision being too low).
             depth_shift (int): The amount to shift the depth in each iteration.
             verbose (bool): If True, prints any errors that occur during the computation.
         
@@ -248,17 +248,20 @@ class PCF():
         """
         orig_depth = depth
 
-        delta = 0
+        delta = float('+inf')
         i = 0; success = False
-        while not success and i < max_iters:
+        while (delta == float('+inf') or not success) and i < max_iters:
             try:
                 delta = round(float(self.delta(depth)), 5)
-                success = True
+                if delta != float('+inf'):
+                    success = True
             except Exception as e:
                 if verbose:
                     print(f'Error in delta of {self}:', e)
                 success = False
             depth += depth_shift; i += 1
+            if verbose and not success and i < max_iters:
+                print(f'delta unsuccessful, trying with depth {depth}')
 
         depth = orig_depth
         convrate = 0
@@ -271,6 +274,8 @@ class PCF():
                 if verbose:
                     print(f'Error in convrate of {self}:', e)
             depth += depth_shift; i += 1
+            if verbose and not success and i < max_iters:
+                print(f'convergence rate unsuccessful, trying with depth {depth}')
 
         return delta, convrate
 
