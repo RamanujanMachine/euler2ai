@@ -30,7 +30,7 @@ A multi-stage pipeline extracts formulas calculating the constant of interest (e
 Now represented as polynomial recurrences, formulas undergo:  
 1. Computation of dynamical metrics: the irrationality measure ($\delta$) and convergence rate are calculated.
 2. Initial clustering: based on the $\delta$ metric.
-3. Formula matching: a new algorithm is applied to discover novel connections (compositions of "folds" + coboundary equivalences) between formulas.
+3. Unification: a new matching algorithm is applied to discover novel connections (compositions of "folds" + coboundary equivalences) between formulas. Some formulas inputted here are derived from a Conservative Matrix Field (CMF), and any formula proven equivalent to one of these is said to be "unified" by the CMF.
 
 The result is a graph, specifically a collection of cliques, containing novel transformations between formulas that prove they are equivalent.  
 
@@ -82,7 +82,7 @@ To reproduce the results and explore the methodologies presented in the paper, f
    - `5_validation.py`: Computes formulas and finds symbolic values (limits of series and continued fractions) in terms of the constant of interest.
    - `6_to_recurrence.py`: If `USE_GUESS` is `True`, computes the first 200 terms of each series in preparation for conversion to polynomial recurrences. Otherwise, uses our internal implementation to convert series to polynomial continued fractions (PCFs) where possible.
    - `6_to_recurrence.wl`: (**Note**: run only if `USE_GUESS` was set to `True`.) Mathematica code based on [RISC's tool](https://risc.jku.at/sw/guess/) (request access [here](https://www3.risc.jku.at/research/combinat/software/ergosum/installation.html#download)) that finds the correct polynomial-coefficient linear recurrences for, e.g., sequences converging to irrational constants.
-   - `7_merge.py`: Collect and organize in a pandas DataFrame (and a json file for visual inspection) all validated formulas (series and continued fractions) yielding polynomial recurrences of order 2, and convert all to canonical forms - polynomial continued fractions (PCFs). (**Note**: the focus of this study is formulas with order 2 polynomial linear recurrences; we have high hopes for higher-order recurrences in the near future.)  
+   - `7_merge_and_dynamical_metrics.py`: Collect and organize in a pandas DataFrame (and a json file for visual inspection) all validated formulas yielding polynomial recurrences of order 2, and convert all to canonical forms - polynomial continued fractions (PCFs). The irrationality measure ($\delta$) and convergence rate are computed for each canonical form. (**Note**: the focus of this study is formulas with order 2 polynomial linear recurrences as the vast majority of formulas collected were of this type: 402 vs 5. Higher-order recurrences can be addressed with the same algorithm, see Appendix B.3 of the paper.)  
 
    This results in a dataframe of formulas in canonical form (PCFs) and their symbolic limits in terms of the constant of interest, along with source metadata, located in `BASE_DIR`.  
 
