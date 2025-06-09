@@ -24,7 +24,7 @@
 # before running 6_to_recurrence.wl
 
 
-BASE_DIR = ''
+BASE_DIR = r'C:\Users\totos\Desktop\unifier_repo_runs\testing_new_7_merge_and_dynamical_metrics'
 ARXIV_IDS_OF_INTEREST = [
     '1911.05456',
     '2204.08275',

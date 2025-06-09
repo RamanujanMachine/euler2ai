@@ -1,12 +1,13 @@
 from unifier import PCF, find_initial
 from unifier.utils.recurrence_transforms_utils import mobius
 from dataset_utils.formula_utils import unpack_series
-from config import BASE_DIR, USE_GUESS
+from config import BASE_DIR, USE_GUESS, MAX_WORKERS
 import sympy as sp
 from sympy.parsing.mathematica import parse_mathematica
 import os
 import pandas as pd
 import json
+from multiprocessing import Pool
 n = sp.symbols('n')
 
 
@@ -63,6 +64,13 @@ def ab_from_string(string, sympify=False):
     if sympify:
         a = sp.sympify(a); b = sp.sympify(b)
     return a, b
+
+
+def compute_dynamics(i_ab):
+    i, a, b = i_ab
+    print(i)
+    pcf = PCF(sp.sympify(a), sp.sympify(b))
+    return i, *pcf.compute_dynamics(4000)
 
 
 if __name__ == "__main__":
@@ -205,14 +213,33 @@ if __name__ == "__main__":
 
     dataframe = pd.DataFrame.from_dict(pcfs, orient='index')
     pcfsdf = pd.DataFrame.from_dict(pcfs, orient='index').reset_index().rename(columns={'index': 'local_file'})
-    pcfsdf = pcfsdf.reindex(columns=['a', 'b', 'limit', 'source', 'local_file'])
+    pcfsdf['ab'] = pcfsdf.apply(lambda x: (x['a'], x['b']), axis=1)
+    pcfsdf = pcfsdf.reindex(columns=['ab', 'a', 'b', 'limit', 'source', 'local_file'])
     pcfsdf['line'] = pcfsdf['source'].apply(lambda x: x['line'])
     pcfsdf_sorted = pcfsdf.sort_values(by=['local_file', 'line'])
     pcfsdf = pcfsdf_sorted.drop(columns=['local_file', 'line']).reset_index(drop=True)
-
+    
+    pcfsdf = pcfsdf.groupby(['ab']).agg(    
+        {'a': 'first', 'b': 'first', 'limit': 'first', 'source': list}
+        ).reset_index().rename(columns = {'source': 'sources'})
+    pcfsdf.sort_values(by=['a', 'b'], key=lambda x: x.str.len(), inplace=True)
 
     # compute dynamical metrics
     # TODO complete this part
+
+    job = []
+    for i, row in pcfsdf.iterrows():
+        job.append((i, row['a'], row['b']))
+
+    with Pool(min(MAX_WORKERS, 8)) as p:
+        results = p.map(compute_dynamics, job)
+
+    pcfsdf['delta'] = None
+    pcfsdf['convergence_rate'] = None
+
+    for i, delta, convrate in results:
+        pcfsdf.at[i, 'delta'] = delta
+        pcfsdf.at[i, 'convergence_rate'] = convrate
 
     pcfsdf.to_pickle(OUTPUT_PKL)
     # pcfsdf.to_json(OUTPUT_JSON.replace('.json', 'test.json'), orient='index', indent=4)

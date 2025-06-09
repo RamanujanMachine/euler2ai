@@ -239,16 +239,18 @@ class PCF():
             depth (int): The approximation depth at which to compute the dynamical metrics.
             max_iters (int): The maximum number of depths to try (due to internal problems).
             depth_shift (int): The amount to shift the depth in each iteration.
-            verbose (bool): If True, prints c
+            verbose (bool): If True, prints any errors that occur during the computation.
+        
+        Returns:
+            tuple: (delta, convergence_rate) where:
+                - delta (float): The irrationality measure of the PCF.
+                - convergence_rate (float): The convergence rate of the PCF.
         """
         orig_depth = depth
 
-        delta = float('+inf'); i = 0; success = False
-        while (delta == float('+inf') or not success) and i < max_iters:
-            if i > 0:
-                if verbose:
-                    print('delta is +inf')
-                    print(i, self)
+        delta = 0
+        i = 0; success = False
+        while not success and i < max_iters:
             try:
                 delta = round(float(self.delta(depth)), 5)
                 success = True
@@ -259,7 +261,8 @@ class PCF():
             depth += depth_shift; i += 1
 
         depth = orig_depth
-        convrate = 0; i = 0; success = False
+        convrate = 0
+        i = 0; success = False
         while not success and i < max_iters:
             try:
                 convrate = round(float(self.convergence_rate(depth)), 5)
