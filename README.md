@@ -11,7 +11,7 @@ The project shows how AI can be paired with tailored algorithms to automatically
 
 ## Overview
 
-There are two main stages to the process: **formula harvesting** (dataset acquisition) and **unification** (proof discovery).
+There are two main stages to the process: **formula harvesting** (dataset acquisition) and **unification** (equivalence discovery and proof).
 
 ### Formula harvesting
 
@@ -30,35 +30,41 @@ A multi-stage pipeline extracts formulas calculating the constant of interest (e
 Now represented as polynomial recurrences, formulas undergo:  
 1. Computation of dynamical metrics: the irrationality measure ($\delta$) and convergence rate are calculated.
 2. Initial clustering: based on the $\delta$ metric.
-3. Formula matching: new algorithms are applied to discover novel connections (compositions of "folds" + coboundary equivalences) between formulas.
+3. Formula matching: a new algorithm is applied to discover novel connections (compositions of "folds" + coboundary equivalences) between formulas.
 
 The result is a graph, specifically a collection of cliques, containing novel transformations between formulas that prove they are equivalent.  
 
 ## Getting Started
 
-For a quick intro, please check out the tutorial [notebook](https://colab.research.google.com/drive/13EC9hwEhoA_xvEu_7p_9wbIl2QjDknqC?authuser=1#scrollTo=Jh-CDhaF0twQ).
+For a quick intro, please check out the tutorial [notebook](https://colab.research.google.com/drive/13EC9hwEhoA_xvEu_7p_9wbIl2QjDknqC?usp=sharing).
 
 To reproduce the results and explore the methodologies presented in the paper, follow these steps:
 
 ### 1. Clone the repository and install the `unifier` package:  
-   Create a new virtual environment and run
+   Clone the repository
    ```bash
-   git clone https://github.com/RamanujanMachine/unifying-formulas-for-math-constants.git
-   cd unifying-formulas-for-math-constants
-   pip install .
+   git clone https://github.com/RamanujanMachine/euler2ai.git
+   cd euler2ai
    ```
-
-   which installs the `unifier` package and copies datasets and scripts to the local machine. Alternatively,  
-
+   create a new virtual environment, e.g.
    ```bash
-   pip install git+https://github.com/RamanujanMachine/unifying-formulas-for-math-constants.git
+   python -m venv euler2ai_env  
+   euler2ai_env\Scripts\activate (Windows)
+   ```
+   and install the unifier package
+   ```bash
+   pip install .
+   ``` 
+   Alternatively, install only the package to a new virtual environment  
+   ```bash
+   pip install git+https://github.com/RamanujanMachine/euler2ai.git
    ```
    and download the relevant data and scripts separately as needed.
 
 **Proceed to Unification if you are interested in recreating the paper's results without testing the harvesting pipeline.**
 
 ### 2. Harvesting formulas:  
-   The 7-step harvesting pipeline can be found under `dataset.acquisition`.  
+   The 7-step harvesting pipeline can be found under `harvesting`.  
    Under this directory, the file `config.py` contains the following settings:  
    - `BASE_DIR` (`str`): directory in which to store intermediate pipeline results, from each step.  
    - `ARXIV_IDS_OF_INTEREST` (`list[str]` or path to pickled `list[str]`): a list of arXiv ids to be scraped for formulas.  
