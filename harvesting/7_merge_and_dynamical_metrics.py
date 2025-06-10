@@ -1,6 +1,6 @@
 from unifier import PCF, find_initial
 from unifier.utils.recurrence_transforms_utils import mobius
-from dataset_utils.formula_utils import unpack_series
+from harvesting_utils.formula_utils import unpack_series
 from config import BASE_DIR, USE_GUESS, MAX_WORKERS
 import sympy as sp
 from sympy.parsing.mathematica import parse_mathematica
