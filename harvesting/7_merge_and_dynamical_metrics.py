@@ -15,7 +15,7 @@ OUTPUT_JSON = os.path.join(BASE_DIR, 'pcfs' + ('-GUESS' if USE_GUESS else '') + 
 OUTPUT_PKL = os.path.join(BASE_DIR, 'pcfs' + ('-GUESS' if USE_GUESS else '') + '.pkl')
 
 
-def collect_recurrence(recurrence_str):
+def collect_recurrence(recurrence_str, verbose=False):
     r"""
     Collect the polynomial coefficients from a RISC Guess result,
     which is a Mathematica string of a recurrence relation.
@@ -28,7 +28,8 @@ def collect_recurrence(recurrence_str):
     
     # Extract coefficients
     coefficients = {}
-    print(expr.as_ordered_terms())
+    if verbose:
+        print(expr.as_ordered_terms())
     for term in expr.as_ordered_terms():
         coeff, f_term = term.args
         if f_term:

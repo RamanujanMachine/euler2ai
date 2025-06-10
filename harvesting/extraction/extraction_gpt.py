@@ -1,4 +1,4 @@
-from dataset_utils.gpt_utils import (
+from harvesting_utils.gpt_utils import (
     system_message,
     user_message,
     assistant_message,

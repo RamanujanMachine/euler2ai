@@ -1,5 +1,5 @@
 from unifier.identify import identification_loop
-from dataset_utils.formula_utils import build_formula
+from harvesting_utils.formula_utils import build_formula
 from config import BASE_DIR, MAX_WORKERS, VALIDATION_TIMEOUT
 from multiprocessing import Process, cpu_count
 import os

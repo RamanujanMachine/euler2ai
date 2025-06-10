@@ -1,4 +1,4 @@
-from dataset_utils.gpt_utils import extract_content, system_message, user_message, assistant_message
+from harvesting_utils.gpt_utils import extract_content, system_message, user_message, assistant_message
 import openai
 import json
 from pydantic import BaseModel

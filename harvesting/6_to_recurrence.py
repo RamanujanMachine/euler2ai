@@ -1,5 +1,5 @@
 from unifier.pcf_from_series import PCFFromSeries, NotRationalFunctionError
-from dataset_utils.formula_utils import unpack_series
+from harvesting_utils.formula_utils import unpack_series
 from config import BASE_DIR, MAX_WORKERS, USE_GUESS
 import sympy as sp
 from multiprocessing import Pool, Manager, cpu_count
