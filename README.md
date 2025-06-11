@@ -1,5 +1,5 @@
-![A Conservative Matrix Field (CMF) contains many celebrated formulas from the literature.](image.png)
-*A Conservative Matrix Field (CMF) contains many celebrated formulas from the literature.*
+![Unification.](images/unification.png)
+<p align="center"><em>A Conservative Matrix Field (CMF) contains many celebrated formulas from the literature.</em></p>
 
 # From Euler to AI: Unifying Formulas for Mathematical Constants
 
@@ -10,7 +10,7 @@ Using this framework, many formulas are found to be embedded in a single mathema
 The project shows how AI can be paired with tailored algorithms to automatically unify and expand upon mathematical knowledge.
 
 ## Overview
-
+![](images/overview.png)
 There are two main stages to the process: **formula harvesting** (dataset acquisition) and **unification** (equivalence discovery and proof).
 
 ### Formula harvesting
@@ -28,11 +28,11 @@ A multi-stage pipeline extracts formulas calculating the constant of interest (e
 ### Unification
 
 Now represented as polynomial recurrences, formulas undergo:  
-1. Computation of dynamical metrics: the irrationality measure ($\delta$) and convergence rate are calculated.
+1. Computation of dynamical metrics: the irrationality measure ($\delta$) and convergence rate ($r$) are calculated.
 2. Initial clustering: based on the $\delta$ metric.
-3. Unification: a new matching algorithm is applied to discover novel connections (compositions of "folds" + coboundary equivalences) between formulas. Some formulas inputted here are derived from a Conservative Matrix Field (CMF), and any formula proven equivalent to one of these is said to be "unified" by the CMF.
+3. Unification: a new matching algorithm is applied to discover novel connections (compositions of "folds" + coboundary equivalences) between formulas. Some formulas inputted here are derived from a Conservative Matrix Field (CMF), and any formula proven equivalent to one of these is said to be "unified" by the CMF, completing the unification process.
 
-The result is a graph, specifically a collection of cliques, containing novel transformations between formulas that prove they are equivalent.  
+The result is a graph—specifically a collection of cliques—containing novel transformations between formulas that establish their equivalence. Cliques containing CMF-derived formulas are unified by the CMF.  
 
 ## Getting Started
 
@@ -83,21 +83,35 @@ To reproduce the results and explore the methodologies presented in the paper, f
    - `5_validation.py`: Computes formulas and finds symbolic values (limits of series and continued fractions) in terms of the constant of interest.
    - `6_to_recurrence.py`: If `USE_GUESS` is True, computes the first 200 terms of each series in preparation for conversion to polynomial recurrences. Otherwise, uses our internal implementation to convert series to polynomial continued fractions (PCFs) where possible.
    - `6_to_recurrence.wl`: (**Note**: run only if `USE_GUESS` was set to True.) Mathematica code that uses RISC's tool to find the correct polynomial-coefficient linear recurrences for, e.g., sequences converging to irrational constants.
-   - `7_merge_and_dynamical_metrics.py`: Collect and organize in a pandas DataFrame (and a json file for visual inspection) all validated formulas yielding polynomial recurrences of order 2, and convert all to canonical forms - polynomial continued fractions (PCFs). The irrationality measure ($\delta$) and convergence rate are computed for each canonical form. (**Note**: the focus of this study is formulas with order 2 polynomial linear recurrences as the vast majority of formulas collected were of this type: 402 vs 5. Higher-order recurrences can be addressed with the same algorithm, see Appendix B.3 of the paper.)  
+   - `7_merge_and_dynamical_metrics.py`: Collect and organize in a pandas DataFrame (and a json file for visual inspection) all validated formulas yielding polynomial recurrences of order 2, and convert all to canonical forms - polynomial continued fractions (PCFs). The irrationality measure ($\delta$) and convergence rate ($r$) are precomputed for each canonical form during this step for convenience. (**Note**: the focus of this study is formulas with order 2 polynomial linear recurrences as the vast majority of formulas collected were of this type: 402 vs 5. Higher-order recurrences can be addressed with the same algorithm, see Appendix B.3 of the paper.)  
 
    This results in a dataframe of formulas in canonical form (PCFs), their symbolic limits in terms of the constant of interest, and their dynamical metrics, along with source metadata, located in `BASE_DIR`.  
 
 ### 3. Unification:
-Configure and run the script `grow_coboundary_graph.py`, which matches between formulas using initial clustering via $\delta$ and the UMAPS coboundary algorithm:  
+Configure and run the script `grow_coboundary_graph.py`, which matches between formulas using initial clustering according to $\delta$, folding, and the UMAPS coboundary algorithm:  
    - `PCFS` (path to pickle): dataframe of harvested formulas in canonical form.  
    - `CMF_PCFS` (path to pickle): dataframe of formulas generated by the CMF. Best to use the file `cmf_pcfs_compact.pkl` which contains only the representative formulas needed to recreate the results from the paper.
    - `DELTA_GRANULARITY` (float): $\delta$ clustering resolution, controls the number of cluster "centers" attempted.
    - `DELTA_SIMILARITY_THRESHOLD` (float): max difference between $\delta$ and cluster "center" for inclusion in a cluster.  
 
-The default settings recreate the file `results/coboundary_graph.pkl`, which stores the equivalence results for $\pi$ formulas found in the paper (it will appear as `coboundary_graphs/graph_-1.0_to_-0.1_matched_to_cmf_pcfs.pkl`).  
+The default settings recreate the file `results/coboundary_graph.pkl`, which stores the equivalence results for $\pi$ formulas found in the paper (it will appear as `coboundary_graphs/graph_<START_DELTA>_to_<END_DELTA>_matched_to_cmf_pcfs.pkl`).  
 
 The resuling graph is a directed forest:  
    - each tree represents a clique of equivalent formulas.
    - each edge contains the discovered transformation from one formula to the other.
 
 Trees that have formulas originating from the CMF (nodes with attribute `cmf_sources`) are unified by it, and thus proven to originate from a single mathematical object.
+
+## Citation
+If you use this codebase for your research, please cite:
+```bibtex
+@misc{euler2ai,
+      title={From Euler to AI: Unifying Formulas for Mathematical Constants}, 
+      author={Tomer Raz and Michael Shalyt and Elyasheev Leibtag and Rotem Kalisch and Shachar Weinbaum and Yaron Hadad and Ido Kaminer},
+      year={2025},
+      eprint={2502.17533},
+      archivePrefix={arXiv},
+      primaryClass={math.HO},
+      url={https://arxiv.org/abs/2502.17533}, 
+}
+```
