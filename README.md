@@ -105,7 +105,7 @@ Trees that have formulas originating from the CMF (nodes with attribute `cmf_sou
 Visualize the coboundary graph using the relevant section in `results/results.ipynb`.
 
 ## Citation
-If you use this codebase for your research, please cite:
+If you found the paper or code helpful, please consider citing them:
 ```bibtex
 @misc{euler2ai,
       title={From Euler to AI: Unifying Formulas for Mathematical Constants}, 
