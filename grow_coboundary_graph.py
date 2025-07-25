@@ -155,6 +155,7 @@ if __name__  == "__main__":
 
     for i, (ind, row) in enumerate(pcfs.iterrows()): # hub            
         ab = row['ab']
+        delta = round(row['delta'], 3)
 
         # even for nonhubs, if the pcf is in cmf_pcfs,
         # make this node a cmf_pcf node (add 'cmf_sources' attribute)
@@ -176,7 +177,6 @@ if __name__  == "__main__":
         nontrivial_hubs_attempted += 1
         print(f"    starting hub {nontrivial_hubs_attempted + trivial_hubs} ({round(delta, 2)}): {ab}")
         
-        delta = round(row['delta'], 3)
         candidates = cmf_pcfs[cmf_pcfs['delta'].apply(lambda x: abs(x - delta) < 0.03)]
 
         print('        candidates:', len(candidates))
